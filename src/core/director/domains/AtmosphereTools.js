@@ -24,11 +24,11 @@ export const AtmosphereTools = {
         const s = ctx.currentSettings;
         if (args.sakuraRain !== undefined) {
           s.sakuraRain = args.sakuraRain;
-          ctx.syncUI('setting-sakuraRain', args.sakuraRain, true);
+          ctx.syncUI('sakura-rain', args.sakuraRain, true);
         }
         if (args.snowFall !== undefined) {
           s.snowFall = args.snowFall;
-          ctx.syncUI('setting-snowFall', args.snowFall, true);
+          ctx.syncUI('snow-fall', args.snowFall, true);
         }
         return `Weather: Sakura=${s.sakuraRain ? 'ON' : 'OFF'}, Snow=${s.snowFall ? 'ON' : 'OFF'}`;
       }
@@ -39,39 +39,42 @@ export const AtmosphereTools = {
     const toolCalls = [];
     const actionsSummary = [];
 
-    // Helper: word boundary matcher for English, substring for CJK
-    const matchTopic = (regex, cjkWords) => regex.test(text) || cjkWords.some(w => text.includes(w));
-    const matchNegation = (topicRegex, cjkStopWords) => {
-      // Check for explicit "turn off / stop / disable / clear" associated with weather/topic
-      const enNegation = new RegExp(`\\b(stop|disable|turn off|shut off|clear|remove)\\b.*${topicRegex.source}|${topicRegex.source}.*\\b(stop|off)\\b`, 'i');
-      const cjkNegation = cjkStopWords.some(w => text.includes(w));
-      return enNegation.test(text) || cjkNegation;
-    };
+    // Comprehensive negation detector (handles phrases, contractions, and words before OR after topic)
+    const isNegated = /\b(disable|disabled|disabling|turn off|turned off|turning off|shut off|stop|stopped|stopping|clear|cleared|clearing|remove|removed|removing|no|off|close|closed|closing|hide|hidden|hiding|cancel|canceled|cancelling|none|zero|mute|muted|don't|dont|do not|doesn't|doesnt|does not|did not|didn't|won't|wont|would not|never|without|no more|not want|dont want|don't want|dont need|don't need|not need|dont like|don't like|not like|don't see|dont see|not see)\b/i.test(text) ||
+                      ['关闭', '关掉', '关', '停止', '停', '别', '不要', '不想', '不需要', '不用', '无', '禁用', '取消', '静音', '隐藏', '别下', '别出', '看不见', '不想看到', '别显示'].some(w => text.includes(w));
+
+    // Visual keywords indicator
+    const hasVisualKeywords = /\b(rain|petals?|particles?|falling|drop|effect|effects|visual|weather|see|look|snow and sakura)\b/i.test(text) ||
+                              ['雨', '花瓣', '飘落', '粒子', '特效', '效果', '视觉', '天气', '看', '看到', '出现'].some(w => text.includes(w));
+
+    // Pure audio indicator (no visual particles mentioned)
+    const isPureAudio = (/\b(sound|music|audio|melody|tune|track|noise|still there|too loud|mute|volume|song)\b/i.test(text) ||
+                        ['声音', '音乐', '音频', '音效', '静音', '还在响', '还在播', '太吵'].some(w => text.includes(w))) && !hasVisualKeywords;
 
     // 1. General Weather Turn Off ("turn off the weather", "clear weather", "关掉天气")
-    const isGeneralWeatherClear = /\b(turn off|stop|disable|clear)\s+(?:all\s+)?(?:the\s+)?weather\b/i.test(text) || text.includes('关闭天气') || text.includes('关掉天气');
+    const isGeneralWeatherClear = (/\b(turn off|stop|disable|clear|close)\s+(?:all\s+)?(?:the\s+)?weather\b/i.test(text) || text.includes('关闭天气') || text.includes('关掉天气')) && !isPureAudio;
     if (isGeneralWeatherClear) {
       toolCalls.push({ name: 'setWeather', args: { sakuraRain: false, snowFall: false } });
       actionsSummary.push(isChinese ? '关闭了所有天气特效' : 'turned off weather effects');
       return { toolCalls, actionsSummary };
     }
 
-    // 2. Sakura Cherry Blossoms
-    const isSakuraTopic = matchTopic(/\b(sakura|cherry blossom|petals?)\b/i, ['樱花', '花瓣']);
+    // 2. Sakura Cherry Blossoms (Visual Petals / Effects)
+    const isSakuraTopic = (/\b(sakura|cherry blossom|petals?)\b/i.test(text) || ['樱花', '花瓣'].some(w => text.includes(w))) &&
+                          (!isPureAudio || hasVisualKeywords);
+
     if (isSakuraTopic) {
-      const isStop = matchNegation(/(sakura|cherry blossom|petals?)/, ['停止樱花', '关闭樱花', '关樱花', '关掉樱花', '别下樱花', '停樱花']) ||
-                     /\b(turn off|stop|disable|clear|remove|no)\s+(?:the\s+)?(?:sakura|petals|cherry)\b/i.test(text);
-      const enable = !isStop;
+      const enable = !isNegated;
       toolCalls.push({ name: 'setWeather', args: { sakuraRain: enable } });
       actionsSummary.push(isChinese ? (enable ? '开启了樱花雨 🌸' : '关闭了樱花雨') : (enable ? 'turned on sakura petals 🌸' : 'turned off sakura petals'));
     }
 
-    // 3. Snowfall
-    const isSnowTopic = matchTopic(/\b(snow|snowfall|blizzard|winter)\b/i, ['雪', '下雪', '落雪', '雪花', '开下雪']);
+    // 3. Snowfall (Visual Flakes / Effects)
+    const isSnowTopic = (/\b(snow|snowfall|blizzard|winter)\b/i.test(text) || ['雪', '下雪', '落雪', '雪花', '开下雪'].some(w => text.includes(w))) &&
+                        (!isPureAudio || hasVisualKeywords);
+
     if (isSnowTopic) {
-      const isStop = matchNegation(/(snow|snowfall|blizzard)/, ['停止下雪', '关闭下雪', '关雪', '关掉下雪', '别下雪', '停雪']) ||
-                     /\b(turn off|stop|disable|clear|remove|no)\s+(?:the\s+)?snow\b/i.test(text);
-      const enable = !isStop;
+      const enable = !isNegated;
       toolCalls.push({ name: 'setWeather', args: { snowFall: enable } });
       actionsSummary.push(isChinese ? (enable ? '开启了飘雪效果 ❄️' : '关闭了飘雪效果') : (enable ? 'activated snowfall particles ❄️' : 'turned off snowfall'));
     }

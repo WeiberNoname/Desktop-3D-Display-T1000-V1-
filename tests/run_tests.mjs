@@ -23,6 +23,7 @@ assert.strictEqual(defaults.activeModel, 'procedural', 'Default activeModel shou
 assert.strictEqual(defaults.sakuraRain, true, 'Default sakuraRain should be true');
 assert.strictEqual(defaults.snowFall, false, 'Default snowFall should be false');
 assert.strictEqual(defaults.dynamicBatterySaver, false, 'Default dynamicBatterySaver should be false');
+assert.strictEqual(defaults.fontSizeScale, 1.5, 'Default fontSizeScale should be 1.5');
 
 const merged = SettingsManager.mergeWithDefaults({ scale: 2.5, targetFps: 120, customKey: 'test', snowFall: true });
 assert.strictEqual(merged.scale, 2.5, 'Scale should be overridden to 2.5');
@@ -370,7 +371,7 @@ import('../src/core/SoundManager.js').then(({ SoundManager }) => {
             // 5. Abstract compound request with typo ("turn of")
             const abstractCompound = engine.parseHeuristicIntent('what about scale the app size a bit, and turn of sakura effect');
             assert.strictEqual(abstractCompound.toolCalls.length, 2, 'Should detect both scale and weather tool calls');
-            const hasScale = abstractCompound.toolCalls.some(tc => tc.name === 'setModelScale');
+            const hasScale = abstractCompound.toolCalls.some(tc => tc.name === 'setModelScale' || tc.name === 'setWindowSize');
             const hasSakuraOff = abstractCompound.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.sakuraRain === false);
             assert.ok(hasScale, 'Should extract scale tool call');
             assert.ok(hasSakuraOff, 'Should extract turning off sakura');
@@ -425,18 +426,257 @@ import('../src/core/SoundManager.js').then(({ SoundManager }) => {
             assert.ok(t8.toolCalls.some(tc => tc.name === 'setWeather'), 'Should turn off weather');
             assert.ok(t8.toolCalls.some(tc => tc.name === 'resetPosition'), 'Should reset position');
 
-            // Turn 11: "how can I use this app while I'm working or coding?"
-            const t11 = engine.parseHeuristicIntent("how can I use this app while I'm working or coding?");
-            assert.ok(t11.text.includes('Click-Through') || t11.text.includes('Ignore Mouse'), 'Should give coding companion advice');
+            // Turn 9: "Switch to the waving flag model with cyber neon style and increase wind speed"
+            const t9 = engine.parseHeuristicIntent('Switch to the waving flag model with cyber neon style and increase wind speed');
+            assert.ok(t9.toolCalls.some(tc => tc.name === 'setActiveModel' && tc.args.modelName === 'flag'), 'Should switch to flag model');
+            assert.ok(t9.toolCalls.some(tc => tc.name === 'setTextureSettings' && tc.args.flagPreset === 'cyber'), 'Should set cyber flag preset');
+            assert.ok(t9.toolCalls.some(tc => tc.name === 'setTextureSettings' && tc.args.flagWindSpeed > 3.5), 'Should increase wind speed');
 
-            engine.processUserMessage('scale up a bit and turn off sakura').then(() => {
-              const report = engine.getFormattedReport();
-              assert.ok(report.includes('# 🤖 AI Director Diagnostic Log Report'), 'Report should have markdown header');
-              assert.ok(report.includes('scale up a bit and turn off sakura'), 'Report should record user input');
-              assert.ok(engine.diagnosticLogs.length > 0, 'Diagnostic logs should contain recorded turns');
+            // Turn 10: "Enable mouse click-through mode and reset camera to center"
+            const t10 = engine.parseHeuristicIntent('Enable mouse click-through mode and reset camera to center');
+            assert.ok(t10.toolCalls.some(tc => tc.name === 'setSystemSettings' && tc.args.ignoreMouse === true), 'Should enable click-through');
+            assert.ok(t10.toolCalls.some(tc => tc.name === 'resetPosition'), 'Should reset position');
 
-              console.log('✅ LLMDirectorEngine & ToolRegistry unit tests PASSED.');
-              console.log('\n🎉 ALL 13 UNIT TEST SUITES PASSED CLEANLY (100% SUCCESS)');
+            // Turn 11: Relative Multiplier "Make it a little bit smaller and spin Y twice as fast"
+            mockSettings.speedY = 1.0;
+            const tRel = engine.parseHeuristicIntent('Make it a little bit smaller and spin Y twice as fast');
+            assert.ok(tRel.toolCalls.some(tc => tc.name === 'setModelScale'), 'Should adjust scale');
+            assert.ok(tRel.toolCalls.some(tc => tc.name === 'setSpinRotation' && tc.args.speedY === 2.0), 'Should double spin speed to 2.0x');
+
+            // Turn 12: "It's too noisy and chaotic, make it peaceful for coding" (Zen Mood Archetype)
+            const tZen = engine.parseHeuristicIntent("It's too noisy and chaotic, make it peaceful for coding");
+            assert.ok(tZen.toolCalls.some(tc => tc.name === 'setPhysics' && tc.args.enabled === false), 'Should disable physics in zen mode');
+            assert.ok(tZen.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.snowFall === true), 'Should activate snowfall in zen mode');
+            assert.ok(tZen.text.includes('Zen') || tZen.text.includes('Focus') || tZen.text.includes('Coding Mode'), 'Should return Zen mode reply');
+
+            // Turn 13: "what day is today" (Dynamic Date/Time)
+            const tDate = engine.parseHeuristicIntent('what day is today');
+            assert.strictEqual(tDate.toolCalls.length, 0, 'Date query should not trigger tools');
+            assert.ok(tDate.text.includes('Today is') || tDate.text.includes('2026'), 'Should return dynamic date info');
+
+            // Turn 14: "how can I use this app while I'm working or coding?"
+            const t14 = engine.parseHeuristicIntent("how can I use this app while I'm working or coding?");
+            assert.ok(t14.text.includes('Click-Through') || t14.text.includes('Ignore Mouse'), 'Should give coding companion advice');
+
+            // Turn 15: "make the sakura effect disable" (Post-topic negation)
+            const t15 = engine.parseHeuristicIntent('make the sakura effect disable');
+            assert.ok(t15.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.sakuraRain === false), 'Should disable sakura rain');
+
+            // Turn 16: "mute the sakura sound" (Audio vs visual separation)
+            const t16 = engine.parseHeuristicIntent('mute the sakura sound');
+            assert.ok(t16.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.sakuraVolume === 0.0), 'Should mute sakura sound');
+            assert.ok(!t16.toolCalls.some(tc => tc.name === 'setWeather'), 'Should not toggle visual weather when muting sound');
+
+            // Turn 17: "the sakura sound still there" (Follow-up complaint negation)
+            const t17 = engine.parseHeuristicIntent('the sakura sound still there');
+            assert.ok(t17.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.sakuraVolume === 0.0), 'Should mute sakura sound on complaint');
+
+            // Turn 18: "I mean no sakura effect and sound" (Compound visual + audio negation)
+            const t18 = engine.parseHeuristicIntent('I mean no sakura effect and sound');
+            assert.ok(t18.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.sakuraRain === false), 'Should disable sakura visual effect');
+            assert.ok(t18.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.sakuraVolume === 0.0), 'Should mute sakura audio');
+
+            // Turn 19: "turn on sakura sound at 30 percent" (Explicit percentage extraction)
+            const t19 = engine.parseHeuristicIntent('turn on sakura sound at 30 percent');
+            assert.ok(t19.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.sakuraVolume === 0.30), 'Should set sakura sound volume to 0.30 (30%)');
+
+            // Turn 20: "I don't want to see sakura" (Natural language refusal)
+            const t20 = engine.parseHeuristicIntent("I don't want to see sakura");
+            assert.ok(t20.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.sakuraRain === false), 'Should disable sakura rain on refusal');
+
+            // Turn 21: "I don't need sakura effect" (Natural language negation)
+            const t21 = engine.parseHeuristicIntent("I don't need sakura effect");
+            assert.ok(t21.toolCalls.some(tc => tc.name === 'setWeather' && tc.args.sakuraRain === false), 'Should disable sakura effect');
+
+            // Turn 22: "turrn on sakura sound for 30 percent" (Typo + for percentage)
+            const t22 = engine.parseHeuristicIntent("turrn on sakura sound for 30 percent");
+            assert.ok(t22.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.sakuraVolume === 0.30), 'Should set sakura sound to 30% with typo tolerance');
+
+            // Turn 23: "make the character twice as big" (Relative multiplier scale)
+            const t23 = engine.parseHeuristicIntent("make the character twice as big");
+            assert.ok(t23.toolCalls.some(tc => tc.name === 'setModelScale'), 'Should scale up model for twice as big');
+
+            // Turn 24: "reset all settings to default" (Comprehensive multi-domain reset)
+            const t24 = engine.parseHeuristicIntent("reset all settings to default");
+            assert.ok(t24.toolCalls.some(tc => tc.name === 'setModelScale' && tc.args.scale === 1.0), 'Should reset scale');
+            assert.ok(t24.toolCalls.some(tc => tc.name === 'setActiveModel' && tc.args.modelName === 'procedural'), 'Should reset active model');
+            assert.ok(t24.toolCalls.some(tc => tc.name === 'setWeather'), 'Should reset weather');
+            assert.ok(t24.toolCalls.some(tc => tc.name === 'setSoundVolume'), 'Should reset audio volume');
+            assert.ok(t24.toolCalls.some(tc => tc.name === 'setSystemSettings'), 'Should reset system settings');
+
+            // Turn 25: "what is the current status" (Live reality query)
+            const t25 = engine.parseHeuristicIntent("what is the current status");
+            assert.strictEqual(t25.toolCalls.length, 0, 'Reality query should not trigger tools');
+
+            // Turn 26: "set default mascot to be falg" (Typo tolerance & mascot switching)
+            const t26 = engine.parseHeuristicIntent("set default mascot to be falg");
+            assert.ok(t26.toolCalls.some(tc => tc.name === 'setActiveModel' && tc.args.modelName === 'flag'), 'Should tolerate typo falg and set flag mascot');
+
+            // Turn 27: "scale the window to be smaller" (Window size scaling vs model scale)
+            const t27 = engine.parseHeuristicIntent("scale the window to be smaller");
+            assert.ok(t27.toolCalls.some(tc => tc.name === 'setWindowSize'), 'Should resize window size, not model scale');
+            assert.ok(!t27.toolCalls.some(tc => tc.name === 'setModelScale'), 'Should not trigger model scale when window is specified');
+
+            // Turn 28: "turn on dynamic battery saving" (Battery saver mode)
+            const t28 = engine.parseHeuristicIntent("turn on dynamic battery saving");
+            assert.ok(t28.toolCalls.some(tc => tc.name === 'setPerformanceSettings' && tc.args.dynamicBatterySaver === true), 'Should activate dynamic battery saver');
+
+            // Turn 29: "recommended performance settings" (Balanced performance optimization)
+            const t29 = engine.parseHeuristicIntent("recommended performance settings");
+            assert.ok(t29.toolCalls.some(tc => tc.name === 'setPerformanceSettings'), 'Should apply performance settings');
+
+            // Turn 30: "optimized this app" (General performance optimization)
+            const t30 = engine.parseHeuristicIntent("optimized this app");
+            assert.ok(t30.toolCalls.some(tc => tc.name === 'setPerformanceSettings'), 'Should optimize app performance');
+
+            // Turn 31: "I want the best performance toggle to be enabled" (Maximum performance)
+            const t31 = engine.parseHeuristicIntent("I want the best performance toggle to be enabled");
+            assert.ok(t31.toolCalls.some(tc => tc.name === 'setPerformanceSettings' && tc.args.gpuOptimize === true), 'Should activate best GPU performance mode');
+
+            // Turn 32: "I want performance over battery" (Performance priority disambiguation)
+            const t32 = engine.parseHeuristicIntent("I want performance over battery");
+            assert.ok(t32.toolCalls.some(tc => tc.name === 'setPerformanceSettings' && tc.args.gpuOptimize === true), 'Should choose performance over battery');
+
+            // Turn 33: "save and refresh" (Save & Refresh game companion state)
+            const t33 = engine.parseHeuristicIntent("save and refresh the game");
+            assert.ok(t33.toolCalls.some(tc => tc.name === 'saveAndRefresh'), 'Should execute saveAndRefresh');
+
+            // Turn 34: "resize window to 1000 by 500" (Explicit multi-axis dimension)
+            const t34 = engine.parseHeuristicIntent("resize window to 1000 by 500");
+            const wTool = t34.toolCalls.find(tc => tc.name === 'setWindowSize');
+            assert.ok(wTool, 'Should match setWindowSize');
+            assert.strictEqual(wTool.args.width, 1000);
+            assert.strictEqual(wTool.args.height, 500);
+
+            // Turn 35: "enlarge the app" (Relative enlargement from current dimensions)
+            mockSettings.winWidth = 1000;
+            mockSettings.winHeight = 500;
+            const t35 = engine.parseHeuristicIntent("enlarge the app");
+            const wTool2 = t35.toolCalls.find(tc => tc.name === 'setWindowSize');
+            assert.ok(wTool2, 'Should match setWindowSize for enlarge the app');
+            assert.ok(wTool2.args.width > 1000, 'Should enlarge width from 1000');
+            assert.ok(wTool2.args.height > 500, 'Should enlarge height from 500');
+
+            // Turn 36: "tell me about this app" (App Knowledge Tour)
+            const t36 = engine.parseHeuristicIntent("tell me about this app");
+            assert.strictEqual(t36.toolCalls.length, 0);
+            assert.ok(t36.text.includes('Feature Overview') || t36.text.includes('3D Models'), 'Should return rich app feature overview');
+
+            // Turn 37: "what models are there" (Model catalog)
+            const t37 = engine.parseHeuristicIntent("what models are there");
+            assert.strictEqual(t37.toolCalls.length, 0);
+            assert.ok(t37.text.includes('Bunny') && t37.text.includes('Flag'), 'Should list procedural bunny and waving flag models');
+
+            // Turn 38: "how to play piano" (Piano keys guide)
+            const t38 = engine.parseHeuristicIntent("how to play piano");
+            assert.strictEqual(t38.toolCalls.length, 0);
+            assert.ok(t38.text.includes('A, S, D, F, G, H, J, K') || t38.text.includes('A-K'), 'Should return piano keyboard shortcuts');
+
+            // Turn 39: "keyboard shortcuts" (Blender viewport navigation)
+            const t39 = engine.parseHeuristicIntent("keyboard shortcuts");
+            assert.strictEqual(t39.toolCalls.length, 0);
+            assert.ok(t39.text.includes('MMB') || t39.text.includes('Numpad'), 'Should return Blender viewport shortcuts');
+
+            // Turn 40: "I am feeling tired today" (Empathetic companion response)
+            const t40 = engine.parseHeuristicIntent("I am feeling tired today");
+            assert.strictEqual(t40.toolCalls.length, 0);
+            assert.ok(t40.text.includes('breath') || t40.text.includes('breather') || t40.text.includes('peaceful'), 'Should return empathetic response');
+
+            // Turn 41: "debugging javascript is hard" (Developer banter)
+            const t41 = engine.parseHeuristicIntent("debugging javascript is hard");
+            assert.strictEqual(t41.toolCalls.length, 0);
+            assert.ok(t41.text.includes('developer') || t41.text.includes('bug'), 'Should return developer banter');
+
+            // Turn 42: "write a poem" (Creative poetry)
+            const t42 = engine.parseHeuristicIntent("write a poem");
+            assert.strictEqual(t42.toolCalls.length, 0);
+            assert.ok(t42.text.includes('Pixels') || t42.text.includes('Poem') || t42.text.includes('screen'), 'Should return a creative poem');
+
+            // Turn 43: "tell me a story" (Engaging mini-story)
+            const t43 = engine.parseHeuristicIntent("tell me a story");
+            assert.strictEqual(t43.toolCalls.length, 0);
+            assert.ok(t43.text.includes('Tale') || t43.text.includes('Pixel') || t43.text.includes('companion'), 'Should return a creative desktop story');
+
+            // Turn 44: "are you real" (Companion philosophical reflection)
+            const t44 = engine.parseHeuristicIntent("are you real");
+            assert.strictEqual(t44.toolCalls.length, 0);
+            assert.ok(t44.text.includes('geometric') || t44.text.includes('real') || t44.text.includes('digital'), 'Should return philosophical self-aware reflection');
+
+            // Turn 45: "What is your favorite pizza topping?" (Food banter)
+            const t45 = engine.parseHeuristicIntent("What is your favorite pizza topping?");
+            assert.strictEqual(t45.toolCalls.length, 0);
+            assert.ok(t45.text.includes('pizza') || t45.text.includes('food') || t45.text.includes('comfort') || t45.text.includes('meal') || t45.text.includes('coffee') || t45.text.includes('tea') || t45.text.includes('delicious') || t45.text.includes('eat'), 'Should return friendly food banter');
+
+            // Turn 46: "What do you think about black holes in space?" (Space banter)
+            const t46 = engine.parseHeuristicIntent("What do you think about black holes in space?");
+            assert.strictEqual(t46.toolCalls.length, 0);
+            assert.ok(t46.text.includes('cosmos') || t46.text.includes('space') || t46.text.includes('universe') || t46.text.includes('black holes') || t46.text.includes('stars'), 'Should return space banter');
+
+            // Turn 47: "Flip a coin for me" (Coinflip mini-game)
+            const t47 = engine.parseHeuristicIntent("Flip a coin for me");
+            assert.strictEqual(t47.toolCalls.length, 0);
+            assert.ok(t47.text.includes('HEADS') || t47.text.includes('TAILS'), 'Should return coin flip result');
+
+            // Turn 48: "Roll a dice" (Dice mini-game)
+            const t48 = engine.parseHeuristicIntent("Roll a dice");
+            assert.strictEqual(t48.toolCalls.length, 0);
+            assert.ok(t48.text.includes('Result:') || t48.text.includes('Rolling'), 'Should return dice roll result');
+
+            // Turn 49: "I had a weird dream last night" (Open-ended friendly chat)
+            const t49 = engine.parseHeuristicIntent("I had a weird dream last night");
+            assert.strictEqual(t49.toolCalls.length, 0);
+            assert.ok(t49.text.length > 20, 'Should return natural friendly conversation');
+
+            // Turn 51: "can you turn off something that could be annoying" (Proactive Annoyance Audit)
+            mockSettings.soundMuted = false;
+            mockSettings.soundMasterVolume = 0.8;
+            mockSettings.spinY = true;
+            mockSettings.enablePhysics = true;
+            const t51 = engine.parseHeuristicIntent("can you turn off something that could be annoying");
+            assert.strictEqual(t51.toolCalls.length, 0, 'Audit turn should NOT execute tools immediately without confirmation');
+            assert.ok(t51.text.includes('distracting') || t51.text.includes('annoying') || t51.text.includes('Inspection complete'), 'Should report annoyance inspection findings');
+            assert.ok(engine.pendingProposal !== null, 'Should store pending proposal waiting for user confirmation');
+
+            // Turn 52: "yes please" (User confirms the proposal)
+            const t52 = engine.parseHeuristicIntent("yes please");
+            assert.ok(t52.toolCalls.length >= 2, 'Confirmation turn should execute all proposed tool calls');
+            assert.ok(t52.toolCalls.some(tc => tc.name === 'setSoundVolume' && tc.args.muted === true), 'Should mute audio on confirmation');
+            assert.ok(t52.toolCalls.some(tc => tc.name === 'setSpinRotation'), 'Should stop spin on confirmation');
+            assert.ok(t52.toolCalls.some(tc => tc.name === 'setPhysics' && tc.args.enabled === false), 'Should disable physics on confirmation');
+            assert.strictEqual(engine.pendingProposal, null, 'Should clear pending proposal after execution');
+
+            // Turn 53: Proactive audit + User rejection ("nevermind")
+            engine.parseHeuristicIntent("check out what is annoying");
+            assert.ok(engine.pendingProposal !== null, 'Should store pending proposal');
+            const t53 = engine.parseHeuristicIntent("nevermind");
+            assert.strictEqual(t53.toolCalls.length, 0, 'Rejection should not execute tools');
+            assert.strictEqual(engine.pendingProposal, null, 'Should clear proposal on cancel');
+
+            // AppContextRetriever RAG Knowledge Unit Tests
+            import('../src/core/director/AppContextRetriever.js').then(({ AppContextRetriever }) => {
+              const flagContext = AppContextRetriever.retrieveContext('switch to waving flag with cyber preset');
+              assert.ok(flagContext.includes('Flag Cloth Physics'), 'RAG should retrieve flag cloth topic for flag prompt');
+
+              const saveContext = AppContextRetriever.retrieveContext('save and refresh');
+              assert.ok(saveContext.includes('Save & Refresh'), 'RAG should retrieve save & refresh topic');
+
+              const batteryContext = AppContextRetriever.retrieveContext('turn on dynamic battery saving');
+              assert.ok(batteryContext.includes('Performance Optimization'), 'RAG should retrieve performance topic for battery prompt');
+
+              const pianoContext = AppContextRetriever.retrieveContext('play acoustic piano notes');
+              assert.ok(pianoContext.includes('Web Audio Synthesizer'), 'RAG should retrieve audio synthesizer topic for piano prompt');
+
+              engine.processUserMessage('scale up a bit and turn off sakura').then(() => {
+                const report = engine.getFormattedReport();
+                assert.ok(report.includes('# 🤖 AI Director Diagnostic Log Report'), 'Report should have markdown header');
+                assert.ok(report.includes('scale up a bit and turn off sakura'), 'Report should record user input');
+                assert.ok(report.includes('Real-Time State Delta'), 'Report should contain Real-Time State Delta section');
+                assert.ok(report.includes('Subsystem Status Overview'), 'Report should contain Subsystem Status Overview table');
+                assert.ok(engine.diagnosticLogs.length > 0, 'Diagnostic logs should contain recorded turns');
+
+                console.log('✅ LLMDirectorEngine, ToolRegistry & AppContextRetriever unit tests PASSED.');
+                console.log('\n🎉 ALL 13 UNIT TEST SUITES PASSED CLEANLY (100% SUCCESS)');
+              });
             });
           });
         });

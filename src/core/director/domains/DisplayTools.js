@@ -1,3 +1,5 @@
+import { UIStateInspector } from '../UIStateInspector.js';
+
 /**
  * Display & Model Domain Tools
  * Handles mascot scale, floating bobbing, continuous rotation/spin,
@@ -25,46 +27,45 @@ export const DisplayTools = {
       },
       execute: (args, ctx) => {
         ctx.currentSettings.scale = args.scale;
-        ctx.syncUI('setting-scale', args.scale);
-        const valEl = typeof document !== 'undefined' ? document.getElementById('val-scale') : null;
+        ctx.syncUI('model-scale', args.scale);
+        const valEl = typeof document !== 'undefined' ? document.getElementById('val-model-scale') : null;
         if (valEl) valEl.innerText = `${args.scale}x`;
-        if (ctx.callbacks.updateScale) ctx.callbacks.updateScale(args.scale);
         return `Model Scale: ${args.scale}x`;
       }
     },
     {
       name: 'setBobbing',
-      description: 'Enable or disable the gentle floating/bobbing up and down animation.',
+      description: 'Enable or disable floating bobbing animation.',
       parameters: {
         type: 'object',
         properties: {
-          enabled: { type: 'boolean', description: 'True to enable bobbing, false to disable.' }
+          enabled: { type: 'boolean', description: 'True to enable bobbing, false to freeze height' }
         },
         required: ['enabled']
       },
       sanitize: (args) => ({ enabled: !!args.enabled }),
       execute: (args, ctx) => {
         ctx.currentSettings.bobbing = args.enabled;
-        ctx.syncUI('setting-bobbing', args.enabled, true);
+        ctx.syncUI('model-bobbing', args.enabled, true);
         return `Floating Bobbing: ${args.enabled ? 'ON' : 'OFF'}`;
       }
     },
     {
       name: 'setSpinRotation',
-      description: 'Configure continuous 3D rotation/spinning across X, Y, and Z axes with speed multipliers.',
+      description: 'Control continuous turntable spin rotation on X, Y, and Z axes with speed multipliers.',
       parameters: {
         type: 'object',
         properties: {
-          spinX: { type: 'boolean', description: 'Spin on X axis' },
-          spinY: { type: 'boolean', description: 'Spin on Y axis (standard turntable)' },
-          spinZ: { type: 'boolean', description: 'Spin on Z axis (barrel roll)' },
-          speedX: { type: 'number', description: 'Speed multiplier for X (0.1 to 5.0)' },
-          speedY: { type: 'number', description: 'Speed multiplier for Y (0.1 to 5.0)' },
-          speedZ: { type: 'number', description: 'Speed multiplier for Z (0.1 to 5.0)' }
+          spinX: { type: 'boolean', description: 'Enable pitch rotation around X axis' },
+          spinY: { type: 'boolean', description: 'Enable yaw rotation around Y axis' },
+          spinZ: { type: 'boolean', description: 'Enable roll rotation around Z axis' },
+          speedX: { type: 'number', description: 'Rotation speed multiplier for X (0.1 - 5.0)' },
+          speedY: { type: 'number', description: 'Rotation speed multiplier for Y (0.1 - 5.0)' },
+          speedZ: { type: 'number', description: 'Rotation speed multiplier for Z (0.1 - 5.0)' }
         }
       },
       sanitize: (args, settings) => {
-        const clampSpeed = (v, def) => {
+        const clamp = (v, def) => {
           const num = parseFloat(v);
           if (isNaN(num)) return def;
           return parseFloat(Math.max(0.1, Math.min(5.0, num)).toFixed(2));
@@ -73,38 +74,93 @@ export const DisplayTools = {
           spinX: args.spinX !== undefined ? !!args.spinX : settings.spinX,
           spinY: args.spinY !== undefined ? !!args.spinY : settings.spinY,
           spinZ: args.spinZ !== undefined ? !!args.spinZ : settings.spinZ,
-          speedX: clampSpeed(args.speedX, settings.speedX || 1.0),
-          speedY: clampSpeed(args.speedY, settings.speedY || 1.0),
-          speedZ: clampSpeed(args.speedZ, settings.speedZ || 1.0)
+          speedX: clamp(args.speedX, settings.speedX || 1.0),
+          speedY: clamp(args.speedY, settings.speedY || 1.0),
+          speedZ: clamp(args.speedZ, settings.speedZ || 1.0)
         };
       },
       execute: (args, ctx) => {
         const s = ctx.currentSettings;
-        if (args.spinX !== undefined) { s.spinX = args.spinX; ctx.syncUI('setting-spinX', args.spinX, true); }
-        if (args.spinY !== undefined) { s.spinY = args.spinY; ctx.syncUI('setting-spinY', args.spinY, true); }
-        if (args.spinZ !== undefined) { s.spinZ = args.spinZ; ctx.syncUI('setting-spinZ', args.spinZ, true); }
-        if (args.speedX !== undefined) { s.speedX = args.speedX; ctx.syncUI('setting-speedX', args.speedX); }
-        if (args.speedY !== undefined) { s.speedY = args.speedY; ctx.syncUI('setting-speedY', args.speedY); }
-        if (args.speedZ !== undefined) { s.speedZ = args.speedZ; ctx.syncUI('setting-speedZ', args.speedZ); }
-        return `Spin Rotation: X=${s.spinX}, Y=${s.spinY}, Z=${s.spinZ} (Speed Y=${s.speedY}x)`;
+        s.spinX = args.spinX;
+        s.spinY = args.spinY;
+        s.spinZ = args.spinZ;
+        s.speedX = args.speedX;
+        s.speedY = args.speedY;
+        s.speedZ = args.speedZ;
+
+        ctx.syncUI('spin-x', args.spinX, true);
+        ctx.syncUI('spin-y', args.spinY, true);
+        ctx.syncUI('spin-z', args.spinZ, true);
+        ctx.syncUI('speed-x', args.speedX);
+        ctx.syncUI('speed-y', args.speedY);
+        ctx.syncUI('speed-z', args.speedZ);
+
+        const valSpeedX = typeof document !== 'undefined' ? document.getElementById('val-speed-x') : null;
+        if (valSpeedX) valSpeedX.innerText = `${args.speedX}x`;
+        const valSpeedY = typeof document !== 'undefined' ? document.getElementById('val-speed-y') : null;
+        if (valSpeedY) valSpeedY.innerText = `${args.speedY}x`;
+        const valSpeedZ = typeof document !== 'undefined' ? document.getElementById('val-speed-z') : null;
+        if (valSpeedZ) valSpeedZ.innerText = `${args.speedZ}x`;
+
+        return `Spin Rotation: X=${args.spinX}, Y=${args.spinY}, Z=${args.spinZ} (Speed Y=${args.speedY}x)`;
       }
     },
     {
       name: 'setActiveModel',
-      description: 'Switch the active 3D mascot model (e.g. "procedural", "flag", or custom scanned asset).',
+      description: 'Switch active 3D companion mascot (e.g. "procedural" bunny or "flag" waving banner).',
       parameters: {
         type: 'object',
         properties: {
-          modelName: { type: 'string', description: 'Model name' }
+          modelName: { type: 'string', description: 'Model identifier: "procedural" or "flag"' }
         },
         required: ['modelName']
       },
-      sanitize: (args) => ({ modelName: String(args.modelName || 'procedural').trim() }),
+      sanitize: (args) => {
+        const valid = ['procedural', 'flag'];
+        let name = (args.modelName || '').toLowerCase().trim();
+        if (!valid.includes(name)) name = 'procedural';
+        return { modelName: name };
+      },
       execute: (args, ctx) => {
         ctx.currentSettings.activeModel = args.modelName;
-        ctx.syncUI('setting-activeModel', args.modelName);
-        if (ctx.callbacks.loadCustomModel) ctx.callbacks.loadCustomModel(args.modelName);
+        ctx.syncUI('model-select', args.modelName);
+        if (ctx.callbacks.switchModel) ctx.callbacks.switchModel(args.modelName);
         return `Active Model: ${args.modelName}`;
+      }
+    },
+    {
+      name: 'setWindowSize',
+      description: 'Set electron companion window size (width and height in pixels, min 200 to max 1200).',
+      parameters: {
+        type: 'object',
+        properties: {
+          width: { type: 'number', description: 'Window width in pixels (200-1200)' },
+          height: { type: 'number', description: 'Window height in pixels (200-1200)' }
+        }
+      },
+      sanitize: (args, settings) => {
+        const clamp = (v, min, max, def) => {
+          const num = parseInt(v, 10);
+          if (isNaN(num)) return def;
+          return Math.max(min, Math.min(max, num));
+        };
+        return {
+          width: clamp(args.width, 200, 1200, settings.winWidth || 350),
+          height: clamp(args.height, 200, 1200, settings.winHeight || 350)
+        };
+      },
+      execute: (args, ctx) => {
+        const s = ctx.currentSettings;
+        s.winWidth = args.width;
+        s.winHeight = args.height;
+        ctx.syncUI('win-width', args.width);
+        ctx.syncUI('win-height', args.height);
+        const valW = typeof document !== 'undefined' ? document.getElementById('val-win-width') : null;
+        if (valW) valW.innerText = `${args.width}px`;
+        const valH = typeof document !== 'undefined' ? document.getElementById('val-win-height') : null;
+        if (valH) valH.innerText = `${args.height}px`;
+        if (ctx.callbacks.resizeWindow) ctx.callbacks.resizeWindow(args.width, args.height);
+        return `Window Size: ${args.width}x${args.height}px`;
       }
     },
     {
@@ -125,7 +181,7 @@ export const DisplayTools = {
       },
       execute: (args, ctx) => {
         ctx.currentSettings.targetFps = args.targetFps;
-        ctx.syncUI('setting-targetFps', args.targetFps);
+        ctx.syncUI('target-fps', args.targetFps);
         return `Target FPS: ${args.targetFps}`;
       }
     },
@@ -146,7 +202,6 @@ export const DisplayTools = {
   parseIntent: (text, currentSettings, isChinese) => {
     const toolCalls = [];
     const actionsSummary = [];
-    const hasAny = (...words) => words.some(w => text.includes(w.toLowerCase()));
 
     // 1. General "Stop All Animations"
     if (/\b(stop|disable|clear)\s+(?:all\s+)?animations?\b/i.test(text) || text.includes('停止所有动画') || text.includes('停止动画')) {
@@ -155,28 +210,81 @@ export const DisplayTools = {
       actionsSummary.push(isChinese ? '停止了所有旋转与浮动动画' : 'stopped all animations');
     }
 
-    // 2. Scale Intent
-    const isScaleTopic = /\b(scale|size|resize|zoom|bigger|larger|giant|huge|smaller|tiny|shrink|grow)\b/i.test(text) ||
-                         ['放大', '缩小', '变大', '变小', '尺寸', '缩放', '调大', '调小', '大一点', '小一点', '大些', '小些', '倍'].some(w => text.includes(w));
-    if (isScaleTopic) {
-      // Look for explicit number with or without x (e.g. 100x, 2.5x, 0.8, 150%)
-      const numMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:x|倍|\%)?/i);
-      let targetScale = null;
+    // 2. Scale Intent (Differentiating Window/App Container Size vs Mascot/Model Scale)
+    const isWindowScale = /\b(window|app|application|companion window|desktop window|screen window|frame)\b/i.test(text) ||
+                          ['窗口', '应用', '程序', '界面大小', '窗口尺寸', '应用大小', '软件', '框体'].some(w => text.includes(w));
+    const isModelExplicit = /\b(model|mascot|character|pet|bunny|rabbit|avatar|flag|falg|procedural|figure)\b/i.test(text) ||
+                            ['模型', '角色', '宠物', '兔子', '旗帜', '看板娘'].some(w => text.includes(w));
+    const isScaleTopic = /\b(scale|size|resize|zoom|big|bigger|large|larger|giant|huge|small|smaller|tiny|shrink|grow|double|half|twice|expand|enlarge)\b/i.test(text) ||
+                         ['放大', '缩小', '变大', '变小', '尺寸', '缩放', '调大', '调小', '大一点', '小一点', '大些', '小些', '倍', '大', '小'].some(w => text.includes(w));
 
+    // Get live zero-latency dimensions from DOM or current settings
+    const liveUI = typeof UIStateInspector !== 'undefined' ? UIStateInspector.getLiveUIState() : null;
+
+    if (isWindowScale && !isModelExplicit && isScaleTopic) {
+      const curW = liveUI?.display?.width || currentSettings.winWidth || 350;
+      const curH = liveUI?.display?.height || currentSettings.winHeight || 350;
       const isABit = /\b(a bit|a little|slightly|little bit)\b/i.test(text) || ['一点', '稍微', '些许', '小幅'].some(w => text.includes(w));
-      const isSmaller = /\b(smaller|tiny|shrink)\b/i.test(text) || ['缩小', '变小', '调小', '小一点', '小些'].some(w => text.includes(w));
-      const isBigger = /\b(bigger|larger|giant|huge|grow)\b/i.test(text) || ['放大', '变大', '调大', '大一点', '大些'].some(w => text.includes(w));
+      const isSmaller = /\b(smaller|tiny|shrink|narrow|decrease)\b/i.test(text) || ['缩小', '变小', '调小', '小一点', '小些'].some(w => text.includes(w));
+      const isBigger = /\b(bigger|larger|giant|huge|grow|expand|increase|enlarge)\b/i.test(text) || ['放大', '变大', '调大', '大一点', '大些', '扩大'].some(w => text.includes(w));
 
-      if (numMatch && parseFloat(numMatch[1]) > 0) {
-        let val = parseFloat(numMatch[1]);
-        if (text.includes('%')) val = val / 100;
-        targetScale = Math.max(0.2, Math.min(3.0, val));
+      let targetW = curW;
+      let targetH = curH;
+
+      const dimMatch = text.match(/([0-9]{3,4})\s*(?:x|\*|\s*by\s*)\s*([0-9]{3,4})/i);
+      const singleNumMatch = text.match(/(?:window|app|width|height|size|窗口|尺寸)?\s*(?:to|=)?\s*([0-9]{3,4})\s*(?:px)?\b/i);
+
+      if (dimMatch) {
+        targetW = parseInt(dimMatch[1], 10);
+        targetH = parseInt(dimMatch[2], 10);
+      } else if (/\b(twice as big|twice as large|double the size|double its size|double size|2x bigger|2x size)\b/i.test(text) || ['两倍大', '双倍大', '大一倍', '变大一倍'].some(w => text.includes(w))) {
+        targetW = Math.min(1200, Math.round(curW * 2));
+        targetH = Math.min(1200, Math.round(curH * 2));
+      } else if (/\b(half the size|half its size|half as big|half size|0\.5x size)\b/i.test(text) || ['一半大', '缩小一半', '小一半'].some(w => text.includes(w))) {
+        targetW = Math.max(200, Math.round(curW * 0.5));
+        targetH = Math.max(200, Math.round(curH * 0.5));
+      } else if (singleNumMatch && parseInt(singleNumMatch[1], 10) >= 200) {
+        targetW = parseInt(singleNumMatch[1], 10);
+        targetH = targetW;
       } else if (isSmaller) {
-        const delta = isABit ? 0.2 : 0.4;
-        targetScale = Math.max(0.3, (currentSettings.scale || 1.0) - delta);
+        const delta = isABit ? 50 : 100;
+        targetW = Math.max(200, curW - delta);
+        targetH = Math.max(200, curH - delta);
       } else if (isBigger || isScaleTopic) {
-        const delta = isABit ? 0.2 : 0.4;
-        targetScale = Math.min(3.0, (currentSettings.scale || 1.0) + delta);
+        const delta = isABit ? 50 : 100;
+        targetW = Math.min(1200, curW + delta);
+        targetH = Math.min(1200, curH + delta);
+      }
+
+      toolCalls.push({ name: 'setWindowSize', args: { width: targetW, height: targetH } });
+      actionsSummary.push(isChinese ? `将窗口尺寸调整为 ${targetW}x${targetH}px` : `set window size to ${targetW}x${targetH}px`);
+    } else if (isScaleTopic) {
+      const curScale = liveUI?.display?.scale || currentSettings.scale || 1.0;
+      let targetScale = null;
+      // Look for relative multipliers like "double the size", "twice as big", "half the size"
+      if (/\b(twice as big|twice as large|double the size|double its size|double size|2x bigger|2x size)\b/i.test(text) || ['两倍大', '双倍大', '大一倍', '变大一倍'].some(w => text.includes(w))) {
+        targetScale = Math.min(3.0, curScale * 2.0);
+      } else if (/\b(half the size|half its size|half as big|half size|0\.5x size)\b/i.test(text) || ['一半大', '缩小一半', '小一半'].some(w => text.includes(w))) {
+        targetScale = Math.max(0.2, curScale * 0.5);
+      } else {
+        // Look for explicit number with or without x (e.g. 100x, 2.5x, 0.8, 150%)
+        const numMatch = text.match(/(?:scale|size|resize|zoom|放大|缩小|尺寸|缩放)?\s*(?:to|=)?\s*([0-9]+(?:\.[0-9]+)?)\s*(?:x|倍|\%)/i) ||
+                         text.match(/\b([0-9]+(?:\.[0-9]+)?)\s*x\b/i);
+        const isABit = /\b(a bit|a little|slightly|little bit)\b/i.test(text) || ['一点', '稍微', '些许', '小幅'].some(w => text.includes(w));
+        const isSmaller = /\b(smaller|tiny|shrink)\b/i.test(text) || ['缩小', '变小', '调小', '小一点', '小些'].some(w => text.includes(w));
+        const isBigger = /\b(bigger|larger|giant|huge|grow|enlarge)\b/i.test(text) || ['放大', '变大', '调大', '大一点', '大些'].some(w => text.includes(w));
+
+        if (numMatch && parseFloat(numMatch[1]) > 0) {
+          let val = parseFloat(numMatch[1]);
+          if (text.includes('%')) val = val / 100;
+          targetScale = Math.max(0.2, Math.min(3.0, val));
+        } else if (isSmaller) {
+          const delta = isABit ? 0.2 : 0.4;
+          targetScale = Math.max(0.3, (currentSettings.scale || 1.0) - delta);
+        } else if (isBigger || isScaleTopic) {
+          const delta = isABit ? 0.2 : 0.4;
+          targetScale = Math.min(3.0, (currentSettings.scale || 1.0) + delta);
+        }
       }
 
       if (targetScale !== null) {
@@ -198,8 +306,10 @@ export const DisplayTools = {
     }
 
     // 4. Spin Intent (Continuous Rotation)
-    const isSpinTopic = /\b(spin|rotate|rotation|turntable|revolve|roll)\b/i.test(text) ||
-                        ['旋转', '自转', '转动', '转圈', '转快', '转慢', '转起来'].some(w => text.includes(w));
+    const isDiceGame = /\b(dice|die|roll a dice|roll the dice)\b/i.test(text) || ['掷骰子', '扔骰子', '骰子'].some(w => text.includes(w));
+    const isSpinTopic = !isDiceGame && (/\b(spin|rotate|rotation|turntable|revolve|barrel roll)\b/i.test(text) ||
+                        (/\broll\b/i.test(text) && !isDiceGame) ||
+                        ['旋转', '自转', '转动', '转圈', '转快', '转慢', '转起来'].some(w => text.includes(w)));
     if (isSpinTopic) {
       const isStop = /\b(stop|disable|turn off|shut off|no)\s+(?:spin|rotation|rotating)\b/i.test(text) ||
                      ['停止旋转', '关闭旋转', '关掉旋转', '别转', '不要转', '停下'].some(w => text.includes(w));
@@ -207,11 +317,23 @@ export const DisplayTools = {
         toolCalls.push({ name: 'setSpinRotation', args: { spinX: false, spinY: false, spinZ: false } });
         actionsSummary.push(isChinese ? '停止了旋转' : 'stopped rotation');
       } else {
-        const speedMatch = text.match(/(?:speed|faster|at|速度|倍速)\s*([0-9]+(?:\.[0-9]+)?)/i) || text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:x|倍速)/i);
+        const curSpeed = currentSettings.speedY || 1.0;
         let speed = 1.0;
-        if (speedMatch) speed = parseFloat(speedMatch[1]);
-        else if (/\b(faster|fast|really fast)\b/i.test(text) || ['快点', '加速', '转快'].some(w => text.includes(w))) speed = 2.5;
-        else if (/\b(slow|slower)\b/i.test(text) || ['慢点', '减速', '转慢'].some(w => text.includes(w))) speed = 0.5;
+
+        if (/\b(twice as fast|2x as fast|double the speed|double speed|2x faster)\b/i.test(text) || ['两倍速', '双倍速', '快一倍'].some(w => text.includes(w))) {
+          speed = Math.min(5.0, curSpeed * 2.0);
+        } else if (/\b(three times as fast|3x as fast|triple the speed|3x faster)\b/i.test(text) || ['三倍速', '三倍快'].some(w => text.includes(w))) {
+          speed = Math.min(5.0, curSpeed * 3.0);
+        } else if (/\b(half speed|half as fast|slow down by half|0\.5x speed)\b/i.test(text) || ['一半速度', '慢一半', '减半'].some(w => text.includes(w))) {
+          speed = Math.max(0.1, curSpeed * 0.5);
+        } else {
+          const speedMatch = text.match(/(?:speed|faster|at|速度|倍速)\s*([0-9]+(?:\.[0-9]+)?)/i) || text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:x|倍速)/i);
+          if (speedMatch) speed = parseFloat(speedMatch[1]);
+          else if (/\b(faster|fast|really fast)\b/i.test(text) || ['快点', '加速', '转快'].some(w => text.includes(w))) speed = Math.min(5.0, Math.max(2.5, curSpeed + 1.0));
+          else if (/\b(slow|slower)\b/i.test(text) || ['慢点', '减速', '转慢'].some(w => text.includes(w))) speed = Math.max(0.2, curSpeed - 0.5);
+        }
+
+        speed = parseFloat(speed.toFixed(2));
 
         const spinX = /\b(x axis|pitch)\b/i.test(text) || text.includes('x轴');
         const spinZ = /\b(z axis|barrel)\b/i.test(text) || text.includes('z轴');
@@ -225,11 +347,12 @@ export const DisplayTools = {
       }
     }
 
-    // 5. Model Switching Intent
-    const isModelSwitch = (/\b(switch|change|load|use|set)\b/i.test(text) && /\b(model|procedural|flag)\b/i.test(text)) ||
-                          ['切换模型', '换模型', '换角色', 'procedural model', 'flag model', '程序化模型'].some(w => text.includes(w));
+    // 5. Model Switching Intent (Typo tolerant: falg, buny, mascot, pet, character)
+    const isModelSwitch = /\b(switch\s+(?:to\s+)?(?:the\s+)?(?:model|mascot|character|pet)|change\s+(?:the\s+)?(?:model|mascot|character|pet)|load\s+(?:the\s+)?(?:model|mascot)|use\s+(?:the\s+)?(?:model|mascot)|set\s+(?:default\s+)?(?:the\s+)?(?:model|mascot|character|pet)|choose\s+(?:the\s+)?(?:model|mascot)|switch\s+to\s+(?:flag|falg|procedural|bunny))\b/i.test(text) ||
+                          /\b(flag model|falg model|procedural model|bunny model|default mascot|flag mascot|falg mascot|bunny mascot)\b/i.test(text) ||
+                          ['切换模型', '换模型', '换角色', '更换宠物', '默认模型', '程序化模型', '旗帜模型', '换旗帜'].some(w => text.includes(w));
     if (isModelSwitch) {
-      const modelName = /\bflag\b/i.test(text) || text.includes('旗帜') ? 'flag' : 'procedural';
+      const modelName = /\b(flag|falg)\b/i.test(text) || text.includes('旗帜') ? 'flag' : 'procedural';
       toolCalls.push({ name: 'setActiveModel', args: { modelName } });
       actionsSummary.push(isChinese ? `切换模型为 ${modelName}` : `switched model to ${modelName}`);
     }

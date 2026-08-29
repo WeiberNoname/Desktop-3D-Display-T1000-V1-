@@ -500,6 +500,15 @@ function setupSettingsUI() {
       },
       resetCameraAndPosition: () => {
         resetCameraAndPosition();
+      },
+      updateIgnoreMouseState: () => {
+        updateIgnoreMouseState();
+      },
+      updateXYZVisibility: () => {
+        updateXYZVisibility();
+      },
+      updateStageLighting: () => {
+        updateStageLighting();
       }
     }
   });
