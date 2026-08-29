@@ -15,7 +15,7 @@ export function setupAIDirectorTabUI(deps) {
     callbacks = {}
   } = deps;
 
-  const engine = new LLMDirectorEngine({
+  const engine = deps.engine || new LLMDirectorEngine({
     currentSettings,
     saveSettingsFile,
     showSpeechBubble,
@@ -102,17 +102,18 @@ export function setupAIDirectorTabUI(deps) {
     try {
       const ep = (endpointInput ? endpointInput.value : 'http://localhost:11434/v1').replace(/\/+$/, '') + '/chat/completions';
       const key = apiKeyInput ? apiKeyInput.value.trim() : '';
+      const currentModel = modelInput ? modelInput.value.trim() : 'llama3.2';
       const headers = { 'Content-Type': 'application/json' };
       if (key) headers['Authorization'] = `Bearer ${key}`;
 
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 3500);
+      const tid = setTimeout(() => ctrl.abort(), 6000);
       const res = await fetch(ep, {
         method: 'POST',
         headers,
         signal: ctrl.signal,
         body: JSON.stringify({
-          model: modelInput ? modelInput.value : 'llama3.2',
+          model: currentModel,
           messages: [{ role: 'user', content: 'hi' }],
           max_tokens: 5
         })
@@ -120,18 +121,28 @@ export function setupAIDirectorTabUI(deps) {
       clearTimeout(tid);
 
       if (res.ok || res.status === 400 || res.status === 422) {
-        statusText.textContent = `🟢 Connected! Real Neural LLM is active (${modelInput ? modelInput.value : 'LLM'})`;
+        statusText.textContent = `🟢 Connected! Real Neural LLM is active (${currentModel})`;
         statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
         statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
         statusBadge.style.color = '#34d399';
+      } else if (res.status === 404) {
+        statusText.textContent = `⚠️ Model "${currentModel}" not found on server (404). Pull with: ollama run ${currentModel}`;
+        statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+        statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+        statusBadge.style.color = '#fbbf24';
+      } else if (res.status === 401 || res.status === 403) {
+        statusText.textContent = `⚠️ Authentication Failed (${res.status}). Please check your API key in LLM Config.`;
+        statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        statusBadge.style.color = '#f87171';
       } else {
-        statusText.textContent = `⚠️ Endpoint returned ${res.status}. Falling back to offline dictionary engine.`;
+        statusText.textContent = `⚠️ Endpoint returned HTTP ${res.status}. Falling back to offline companion engine.`;
         statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
         statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
         statusBadge.style.color = '#fbbf24';
       }
     } catch (e) {
-      statusText.textContent = `⚡ Offline Fallback Mode (No active LLM on ${endpointInput ? endpointInput.value : 'endpoint'})`;
+      statusText.textContent = `⚡ Offline Fallback Mode (Cannot reach ${endpointInput ? endpointInput.value : 'endpoint'})`;
       statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
       statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
       statusBadge.style.color = '#fbbf24';
@@ -484,5 +495,7 @@ export function setupAIDirectorTabUI(deps) {
       btnToggleReport.innerText = isHidden ? (t ? t('ai_hide_log', '❌ Hide Log') : '❌ Hide Log') : (t ? t('ai_btn_view_report', '🔍 View Log') : '🔍 View Log');
     });
   }
+
+  return engine;
 }
 

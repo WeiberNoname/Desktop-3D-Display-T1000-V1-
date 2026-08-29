@@ -25,6 +25,7 @@ import {
   forceRefreshAllPreviews as forceRefreshAllPreviewsUtil
 } from './src/ui/PreviewGenerator.js';
 import { setupStudioTabs as setupStudioTabsUtil } from './src/ui/StudioTabManager.js';
+import { setupAssetHubUI } from './src/ui/AssetHubUI.js';
 import { setupSoundTabUI } from './src/ui/SoundTabUI.js';
 import { setupTextureTabUI } from './src/ui/TextureTabUI.js';
 import { setupAIDirectorTabUI } from './src/ui/AIDirectorTabUI.js';
@@ -469,6 +470,36 @@ function setupSettingsUI() {
   });
 
   settingsUIDelegates.setupSettingsUI();
+  setupAssetHubUI({
+    t,
+    THREE,
+    GLTFLoader,
+    onSelectModel: (asset) => {
+      if (asset && asset.name) {
+        showSpeechBubble(`Selected 3D Mascot: ${asset.name}`);
+      }
+    },
+    onApplyTexture: (asset) => {
+      if (asset && asset.objectUrl) {
+        currentSettings.customTexturePath = asset.objectUrl;
+        saveSettingsFile();
+        const previewImg = document.getElementById('texture-preview-img');
+        if (previewImg) previewImg.src = asset.objectUrl;
+        const filenameLabel = document.getElementById('texture-filename');
+        if (filenameLabel) filenameLabel.innerText = asset.name;
+        showSpeechBubble(`Applied ${asset.name} to Flag Cloth!`);
+      }
+    },
+    onLoadPianoScore: (asset) => {
+      if (asset) {
+        const pianoTitle = document.getElementById('piano-song-title');
+        if (pianoTitle) pianoTitle.innerText = `🎹 ${asset.name}`;
+        showSpeechBubble(`Loaded ${asset.name} into Piano Studio!`);
+        const soundTabBtn = document.querySelector('.studio-tab-btn[data-tab="tab-sound"]');
+        if (soundTabBtn) soundTabBtn.click();
+      }
+    }
+  });
   setupSoundTabUI({
     currentSettings,
     saveSettingsFile,
@@ -486,7 +517,7 @@ function setupSettingsUI() {
     getInnerModelGroup: () => innerModelGroup,
     forceRefreshAllPreviews
   });
-  setupAIDirectorTabUI({
+  const directorEngine = setupAIDirectorTabUI({
     currentSettings,
     saveSettingsFile,
     t,

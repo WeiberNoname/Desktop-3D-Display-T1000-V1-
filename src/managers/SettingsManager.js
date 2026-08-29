@@ -60,7 +60,12 @@ export class SettingsManager {
       pianoVolume: 0.85,
       aiDirectorEnabled: true,
       aiEndpointUrl: 'http://localhost:11434/v1',
-      aiModelName: 'llama3.2'
+      aiModelName: 'llama3.2',
+      aiApiKey: '',
+      aiProvider: 'ollama',
+      aiContextRetrievalEnabled: true,
+      aiRetrieverPreset: 'builtin_rag',
+      aiRetrieverEndpoint: 'http://localhost:11434/v1'
     };
   }
 
@@ -219,6 +224,11 @@ language=en`;
             if (key === 'aiDirectorEnabled') { currentSettings.aiDirectorEnabled = (val !== 'false'); validKeysParsed++; }
             if (key === 'aiEndpointUrl') { currentSettings.aiEndpointUrl = val || 'http://localhost:11434/v1'; validKeysParsed++; }
             if (key === 'aiModelName') { currentSettings.aiModelName = val || 'llama3.2'; validKeysParsed++; }
+            if (key === 'aiApiKey') { currentSettings.aiApiKey = val || ''; validKeysParsed++; }
+            if (key === 'aiProvider') { currentSettings.aiProvider = val || 'ollama'; validKeysParsed++; }
+            if (key === 'aiContextRetrievalEnabled') { currentSettings.aiContextRetrievalEnabled = (val !== 'false'); validKeysParsed++; }
+            if (key === 'aiRetrieverPreset') { currentSettings.aiRetrieverPreset = val || 'builtin_rag'; validKeysParsed++; }
+            if (key === 'aiRetrieverEndpoint') { currentSettings.aiRetrieverEndpoint = val || 'http://localhost:11434/v1'; validKeysParsed++; }
             if (key === 'language') { currentSettings.language = val || 'en'; validKeysParsed++; }
           }
         });
@@ -316,6 +326,11 @@ pianoVolume=${currentSettings.pianoVolume !== undefined ? currentSettings.pianoV
 aiDirectorEnabled=${currentSettings.aiDirectorEnabled !== false}
 aiEndpointUrl=${currentSettings.aiEndpointUrl || 'http://localhost:11434/v1'}
 aiModelName=${currentSettings.aiModelName || 'llama3.2'}
+aiApiKey=${currentSettings.aiApiKey || ''}
+aiProvider=${currentSettings.aiProvider || 'ollama'}
+aiContextRetrievalEnabled=${currentSettings.aiContextRetrievalEnabled !== false}
+aiRetrieverPreset=${currentSettings.aiRetrieverPreset || 'builtin_rag'}
+aiRetrieverEndpoint=${currentSettings.aiRetrieverEndpoint || 'http://localhost:11434/v1'}
 language=${currentSettings.language}`;
 
     try {

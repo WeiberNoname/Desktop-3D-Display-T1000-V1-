@@ -8,29 +8,36 @@ A high-performance, transparent, interactive **Desktop 3D Display** for Windows 
 
 ## ⚡ Core Systems & Studio Capabilities
 
-1. **🎯 3D Display & Mesh Studio**:
-   * Supports procedural desktop mascot models and dynamic waving cloth flags.
-   * Custom image texture ingestion (PNG, JPG, WebP, SVG) mapped directly onto native 3D geometry in real-time.
-   * Blender-style viewport navigation (Orbit, Pan, Zoom, Z-Roll arc rotation, Numpad Ortho Views).
-   * Direction-aware, 60 FPS window edge resizing ($200\times 200\text{px}$ to $1200\times 1200\text{px}$) and model scaling ($0.2\times$ to $3.0\times$).
-
-2. **🤖 AI Director & Neural LLM Engine**:
+1. **🤖 AI Function Director & Neural LLM Engine (Tab 1)**:
    * **Dual-Layer Intelligence**: Works with **Local Offline Neural LLMs (Ollama `llama3.2`)**, **Cloud Providers (Groq, OpenRouter, DeepSeek, OpenAI)**, and a **100% Free Offline Heuristic Engine**.
    * **Zero-Latency RAG Telemetry**: Dynamically fuses exact live screen reality (slider values, audio volume, active physics) into every prompt.
-   * **Multi-Turn Proactive Inspection**: Audits running features (*"turn off anything annoying"*) $\rightarrow$ generates diagnostic findings $\rightarrow$ prompts for confirmation $\rightarrow$ executes 1:1 physical DOM updates upon user approval.
-   * **Dynamic Tool Schema Routing**: Routes action commands to 3D controls while letting general knowledge questions (*"where is Taipei"*, *"tell me a story"*) generate rich, articulate conversational answers without raw JSON hallucinations.
+   * **Multi-Turn Proactive Inspection & Autonomous Execution**: Audits running features $\rightarrow$ prompts for confirmation $\rightarrow$ executes 1:1 physical DOM updates.
 
-3. **🎹 Grand Piano Studio & Sheet Music Engine**:
-   * Full acoustic grand piano oscillator synthesis across 88 keys.
-   * Live keyboard controls: tap `A, S, D, F, G, H, J, K` for white keys (C4–C5) and `W, E, T, Y, U` for accidentals (♯/♭).
-   * Binary `.mid` (MIDI) and `.musicxml` parser with dynamic waterfall note roll visualization.
+2. **📦 Universal Asset Hub & Ingestion (Tab 2)**:
+   * **Central Importer**: Universal dropzone supporting 3D Models (`.glb`, `.gltf`, `.fbx`, `.obj`), Textures (`.png`, `.jpg`, `.webp`, `.svg`), and Audio Scores (`.mid`, `.midi`, `.musicxml`, `.xml`).
+   * **Offscreen 3D Snapshot Renderer**: Automatically captures beauty-angle thumbnail snapshots for 3D models with zero VRAM leaks.
+   * **Cross-Tab Ingestion**: Automatically propagates imported assets into the Mascot, Texture, and Piano selection grids.
 
-4. **🌸 Atmosphere & Particle Physics**:
-   * Real-time 3D Cherry Blossom Sakura petal rain and Winter Snowfall particle simulations.
-   * Procedural ambient weather audio loops synchronized with visual particle systems.
+3. **🐰 3D Mascot & Model Studio (Tab 3)**:
+   * Supports procedural desktop mascot models (🐰 Bunny, 🎌 Country Flag) and custom GLTF/GLB assets.
+   * Standardized selection grid with real-time snapshot thumbnails and dedicated skeletal animation clip selector.
 
-5. **⚡ Momentum Physics Engine**:
-   * Newtonian gravity, velocity dampening, ground landing bounce dynamics, and interactive mouse drag throwing (**Hold D + Left Drag**).
+4. **🔦 Stage Lighting & 3D Viewport (Tab 4)**:
+   * Multi-source stage spotlight controls (up to 10 lights) with custom RGB hues, beam angles, and Dark Stage Mode.
+   * Interactive 3D Stage & Lighting Viewport with Blender-style orbit, pan, and zoom controls.
+
+5. **🎨 Texture & Flag Cloth Dynamics (Tab 5)**:
+   * Interactive cloth fluttering physics with real-time harmonic wind billowing equations.
+   * Preset flag styles (🦁 Royal Tricolor, 🌐 World Globe, ⚡ Cyber Neon, ⭐ Royal Star, 🌈 Pride Rainbow) and custom texture image mapping.
+
+6. **🎵 Grand Piano Studio & Ambient Atmosphere (Tab 6)**:
+   * Full acoustic grand piano oscillator synthesis across 88 keys with interactive virtual keyboard.
+   * Binary `.mid` (MIDI) waterfall visualizer and `.musicxml` sheet music engine with synchronized playback.
+   * Ambient atmospheric synthesizer tracks (Snow Atmosphere, Sakura Spring Melody, Lo-Fi Drum Beat).
+
+7. **⚙️ System & Preferences Configuration Hub (Tab 7)**:
+   * Centralized Viewport Dimensions: Window Width ($30\text{px}$ to $3840\text{px}$), Window Height ($30\text{px}$ to $2160\text{px}$), and Model Scale ($0.1\times$ to $5.0\times$).
+   * 12-Language dynamic localization, UI text scaling, GPU performance management, Dynamic Battery Saver, and atomic persistence.
 
 ---
 
@@ -145,20 +152,84 @@ node scratch_test_live_launch.js
 
 ---
 
-## 🧠 Setting Up Neural LLM (Local or Cloud)
+## 🧠 Setting Up Neural LLM (Local Offline & Cloud)
 
-### Option A: 100% Free Ultra-Fast Cloud Neural LLM (No Local RAM Required)
+Desktop 3D Display includes a **Dual-Layer Hybrid Intelligence Pipeline**. You can use **100% Free Local Offline LLMs** (no internet, full privacy), **Cloud LLM APIs**, or the **Built-in Offline Heuristic Companion Engine**.
+
+---
+
+### Option 1: Local Offline Neural LLM (Ollama) — Recommended for Privacy
+1. **Install Ollama**:
+   * Windows: Run `winget install Ollama.Ollama` in PowerShell, or download from [https://ollama.com/download](https://ollama.com/download).
+2. **Pull & Run a Model**:
+   * For ultra-fast, lightweight 3B mascot companion (Recommended):
+     ```cmd
+     ollama run llama3.2
+     ```
+   * Other recommended high-performance models:
+     * `ollama run qwen2.5:7b` (Exceptional multilingual Chinese/Japanese/English & reasoning)
+     * `ollama run qwen2.5:3b` (Fast low-VRAM model)
+     * `ollama run deepseek-r1:8b` (Deep reasoning)
+     * `ollama run mistral` (Creative conversationalist)
+3. **Connect in Desktop App**:
+   * Open the **🤖 AI Director** tab in the app $\rightarrow$ click **⚙️ LLM Config**.
+   * Set **Provider Preset** to **Ollama Local (localhost:11434 - llama3.2)**.
+   * Verify Endpoint URL is `http://localhost:11434/v1` and Model Name matches your pulled model (`llama3.2`).
+   * Click **🔄 Check** $\rightarrow$ status turns **🟢 Connected! Real Neural LLM is active**.
+
+> 💡 **Tip for LAN / Remote Ollama**: If hosting Ollama on another machine or inside WSL, ensure environment variable `OLLAMA_ORIGINS="*"` is set so the local server accepts connections.
+
+---
+
+### Option 2: Local Offline Neural LLM (LM Studio)
+1. **Install LM Studio**: Download and install from [https://lmstudio.ai/](https://lmstudio.ai/).
+2. **Download Model**: In LM Studio, search for and download your preferred GGUF model (e.g., `Qwen2.5-7B-Instruct` or `Llama-3.2-3B-Instruct`).
+3. **Start Local Server**:
+   * Click the **Local Server** (Developer / `<->`) tab in LM Studio.
+   * Select your downloaded model from the top dropdown.
+   * Click **Start Server** (default server runs at `http://localhost:1234/v1`).
+   * Ensure **Enable CORS** is checked in the server settings.
+4. **Connect in Desktop App**:
+   * Open the **🤖 AI Director** tab $\rightarrow$ click **⚙️ LLM Config**.
+   * Set **Provider Preset** to **LM Studio Local (localhost:1234)**.
+   * In the **Model Name** field, enter the identifier loaded in LM Studio (e.g. `qwen2.5-7b-instruct` or any loaded model).
+   * Click **🔄 Check** $\rightarrow$ status turns **🟢 Connected!**.
+
+---
+
+### Option 3: Custom Local Endpoints (llama.cpp / LocalAI / Jan / vLLM / Text-Gen-WebUI)
+1. Start your local OpenAI-compatible server on any port (e.g., `http://localhost:8080/v1` or `http://localhost:5000/v1`).
+2. In **⚙️ LLM Config**, choose **Custom OpenAI Endpoint**.
+3. Enter your custom Endpoint URL and Model Name, then click **🔄 Check**.
+
+---
+
+### Option 4: 100% Free Ultra-Fast Cloud Neural LLM (No Local RAM/VRAM Required)
 1. Open the **🤖 AI Director** tab $\rightarrow$ click **⚙️ LLM Config**.
-2. Set **Provider Preset** to **Groq Cloud** or **OpenRouter Cloud**.
-3. Paste a free API key:
-   * **Groq** (Fastest inference): [https://console.groq.com/keys](https://console.groq.com/keys)
-   * **OpenRouter** (Free tier models): [https://openrouter.ai/keys](https://openrouter.ai/keys)
+2. Set **Provider Preset** to **Groq Cloud** or **OpenRouter Cloud**:
+   * **Groq Cloud** (Blazing-fast 500+ tokens/sec, free tier): [https://console.groq.com/keys](https://console.groq.com/keys)
+   * **OpenRouter Cloud** (Free access to open-weights models): [https://openrouter.ai/keys](https://openrouter.ai/keys)
+   * **DeepSeek API**: [https://platform.deepseek.com](https://platform.deepseek.com)
+   * **OpenAI API**: [https://platform.openai.com](https://platform.openai.com)
+3. Paste your API key into the **API Key** input box.
 4. Click **🔄 Check** $\rightarrow$ status turns **🟢 Connected!**.
 
-### Option B: Local Offline Neural LLM (Ollama)
-1. Install Ollama: `winget install Ollama.Ollama`
-2. Start the local model: `ollama run llama3.2`
-3. In the Desktop App, set Provider to **Ollama Local** and click **🔄 Check** $\rightarrow$ status turns **🟢 Connected!**.
+---
+
+### Option 5: 100% Free Built-in Offline Fallback Engine
+* **Zero Configuration Needed**: If no local or cloud LLM is active, the app automatically runs on its built-in offline heuristic semantic intent engine and open-domain friend chat synthesizer (`OpenDomainCompanionChat.js`).
+* **0ms Latency, 0 RAM Overhead**: Directly executes all 3D adjustments, camera movements, weather simulations, lighting, and natural conversational responses.
+
+---
+
+### 🔧 LLM Connection Troubleshooting Matrix
+
+| Issue / Status Banner | Cause | Solution |
+| :--- | :--- | :--- |
+| `⚡ Offline Fallback Mode (Cannot reach endpoint)` | Ollama or LM Studio service is not running or blocked. | Start Ollama (`ollama serve`) or click "Start Server" in LM Studio. |
+| `⚠️ Model "..." not found on server (404)` | Endpoint is reachable, but model weights are not downloaded. | Run `ollama run <model_name>` in command prompt to download the model. |
+| `⚠️ Authentication Failed (401/403)` | Missing or invalid API key for cloud provider. | Check API key under **⚙️ LLM Config** and re-paste. |
+| Request times out on first prompt | First-time cold start weight loading into GPU VRAM. | The engine supports a 15-second timeout window; subsequent prompts will respond in sub-seconds. |
 
 ---
 
