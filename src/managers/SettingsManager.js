@@ -36,7 +36,7 @@ export class SettingsManager {
       activeModel: 'procedural',
       activeAnimation: 'default',
       clickCount: 0,
-      fontSizeScale: 1.0,
+      fontSizeScale: 1.5,
       targetFps: 60,
       language: 'en',
       soundMuted: false,
@@ -103,7 +103,7 @@ viewOnly=false
 activeModel=procedural
 activeAnimation=default
 clickCount=0
-fontSizeScale=1.0
+fontSizeScale=1.5
 targetFps=60
 sakuraRain=true
 soundMuted=false
@@ -195,7 +195,7 @@ language=en`;
             if (key === 'activeModel') { currentSettings.activeModel = val || 'procedural'; validKeysParsed++; }
             if (key === 'activeAnimation') { currentSettings.activeAnimation = val || 'default'; validKeysParsed++; }
             if (key === 'clickCount') { currentSettings.clickCount = parseInt(val, 10) || 0; validKeysParsed++; }
-            if (key === 'fontSizeScale') { currentSettings.fontSizeScale = parseFloat(val) || 1.0; validKeysParsed++; }
+            if (key === 'fontSizeScale') { currentSettings.fontSizeScale = parseFloat(val) || 1.5; validKeysParsed++; }
             if (key === 'targetFps') { currentSettings.targetFps = parseInt(val, 10) || 60; validKeysParsed++; }
             if (key === 'soundMuted') { currentSettings.soundMuted = (val === 'true'); validKeysParsed++; }
             if (key === 'soundMasterVolume') { currentSettings.soundMasterVolume = parseFloat(val) || 0.8; validKeysParsed++; }

@@ -79,17 +79,59 @@ export class ToolRegistry {
         }
       }
 
-      // 3. Execution Context
+      // 3. Execution Context with Robust DOM UI Synchronization & Event Dispatch
       const context = {
         currentSettings: this.currentSettings,
         callbacks: this.callbacks,
         syncUI: (elementId, value, isChecked = false) => {
-          if (typeof document !== 'undefined') {
-            const el = document.getElementById(elementId);
-            if (el) {
-              if (isChecked) el.checked = !!value;
-              else el.value = value;
+          if (typeof document === 'undefined') return;
+
+          // Map possible legacy/domain IDs to exact HTML DOM IDs
+          const idMap = {
+            'setting-scale': 'model-scale',
+            'setting-bobbing': 'model-bobbing',
+            'setting-spinX': 'spin-x',
+            'setting-spinY': 'spin-y',
+            'setting-spinZ': 'spin-z',
+            'setting-speedX': 'speed-x',
+            'setting-speedY': 'speed-y',
+            'setting-speedZ': 'speed-z',
+            'setting-sakuraRain': 'sakura-rain',
+            'setting-snowFall': 'snow-fall',
+            'setting-enablePhysics': 'enable-physics',
+            'setting-physicsGravity': 'physics-gravity',
+            'setting-physicsElasticity': 'physics-elasticity',
+            'setting-physicsFloor': 'physics-floor',
+            'setting-model': 'model-select'
+          };
+
+          const targetId = idMap[elementId] || elementId;
+          const el = document.getElementById(targetId);
+          if (el) {
+            if (isChecked) {
+              el.checked = !!value;
+            } else {
+              el.value = value;
             }
+
+            // Also update any companion text/numerical indicators (e.g. val-model-scale, val-speed-y)
+            const possibleValIds = [`val-${targetId}`, `val-${elementId}`, targetId.replace(/^(model|spin|speed|physics|sound)-/, 'val-')];
+            for (const valId of possibleValIds) {
+              const valEl = document.getElementById(valId);
+              if (valEl) {
+                if (typeof value === 'number') {
+                  valEl.innerText = Number.isInteger(value) ? `${value}x` : `${value.toFixed(2)}x`;
+                } else if (typeof value === 'string') {
+                  valEl.innerText = value;
+                }
+              }
+            }
+
+            // Dispatch DOM events so Three.js render loops & form listeners execute immediately
+            try {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch (e) {}
           }
         },
         saveSettings: () => {

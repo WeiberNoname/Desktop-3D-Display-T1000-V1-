@@ -24,9 +24,13 @@ export function setupAIDirectorTabUI(deps) {
 
   // DOM Elements
   const enableToggle = document.getElementById('ai-director-enable');
+  const contextRetrievalToggle = document.getElementById('ai-context-retrieval-enable');
   const endpointInput = document.getElementById('ai-endpoint-url');
   const modelInput = document.getElementById('ai-model-name');
   const providerSelect = document.getElementById('ai-provider-select');
+  const retrieverPresetSelect = document.getElementById('ai-retriever-preset');
+  const customRetrieverBox = document.getElementById('ai-custom-retriever-box');
+  const retrieverEndpointInput = document.getElementById('ai-retriever-endpoint');
   const settingsAccordion = document.getElementById('ai-settings-panel');
   const btnToggleConfig = document.getElementById('btn-ai-toggle-config');
 
@@ -34,7 +38,6 @@ export function setupAIDirectorTabUI(deps) {
   const chatInput = document.getElementById('ai-chat-input');
   const btnSend = document.getElementById('btn-ai-send');
   const btnClearChat = document.getElementById('btn-ai-clear');
-  const promptChips = document.querySelectorAll('.ai-prompt-chip');
 
   // 1. Settings & Endpoint Controls
   if (enableToggle) {
@@ -46,12 +49,22 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
+  if (contextRetrievalToggle) {
+    contextRetrievalToggle.checked = currentSettings.aiContextRetrievalEnabled !== false;
+    contextRetrievalToggle.addEventListener('change', () => {
+      currentSettings.aiContextRetrievalEnabled = contextRetrievalToggle.checked;
+      engine.isContextRetrievalEnabled = contextRetrievalToggle.checked;
+      if (saveSettingsFile) saveSettingsFile();
+    });
+  }
+
   if (endpointInput) {
     endpointInput.value = currentSettings.aiEndpointUrl || 'http://localhost:11434/v1';
     endpointInput.addEventListener('change', () => {
       currentSettings.aiEndpointUrl = endpointInput.value.trim();
       engine.endpointUrl = currentSettings.aiEndpointUrl;
       if (saveSettingsFile) saveSettingsFile();
+      checkEndpointConnection();
     });
   }
 
@@ -64,15 +77,99 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
+  const apiKeyInput = document.getElementById('ai-api-key');
+  if (apiKeyInput) {
+    apiKeyInput.value = currentSettings.aiApiKey || '';
+    apiKeyInput.addEventListener('change', () => {
+      currentSettings.aiApiKey = apiKeyInput.value.trim();
+      engine.apiKey = currentSettings.aiApiKey;
+      if (saveSettingsFile) saveSettingsFile();
+      checkEndpointConnection();
+    });
+  }
+
+  const statusBadge = document.getElementById('ai-connection-status-badge');
+  const statusText = document.getElementById('ai-status-text');
+  const btnPing = document.getElementById('btn-ai-ping-endpoint');
+
+  async function checkEndpointConnection() {
+    if (!statusText || !statusBadge) return;
+    statusText.textContent = '🔄 Testing connection to ' + (endpointInput ? endpointInput.value : 'endpoint') + '...';
+    statusBadge.style.background = 'rgba(148, 163, 184, 0.15)';
+    statusBadge.style.borderColor = 'rgba(148, 163, 184, 0.35)';
+    statusBadge.style.color = '#cbd5e1';
+
+    try {
+      const ep = (endpointInput ? endpointInput.value : 'http://localhost:11434/v1').replace(/\/+$/, '') + '/chat/completions';
+      const key = apiKeyInput ? apiKeyInput.value.trim() : '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = `Bearer ${key}`;
+
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 3500);
+      const res = await fetch(ep, {
+        method: 'POST',
+        headers,
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          model: modelInput ? modelInput.value : 'llama3.2',
+          messages: [{ role: 'user', content: 'hi' }],
+          max_tokens: 5
+        })
+      });
+      clearTimeout(tid);
+
+      if (res.ok || res.status === 400 || res.status === 422) {
+        statusText.textContent = `🟢 Connected! Real Neural LLM is active (${modelInput ? modelInput.value : 'LLM'})`;
+        statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        statusBadge.style.color = '#34d399';
+      } else {
+        statusText.textContent = `⚠️ Endpoint returned ${res.status}. Falling back to offline dictionary engine.`;
+        statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+        statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+        statusBadge.style.color = '#fbbf24';
+      }
+    } catch (e) {
+      statusText.textContent = `⚡ Offline Fallback Mode (No active LLM on ${endpointInput ? endpointInput.value : 'endpoint'})`;
+      statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+      statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+      statusBadge.style.color = '#fbbf24';
+    }
+  }
+
+  if (btnPing) {
+    btnPing.addEventListener('click', () => checkEndpointConnection());
+  }
+
+  // Initial connection check on startup
+  setTimeout(checkEndpointConnection, 800);
+
   if (providerSelect) {
+    if (currentSettings.aiProvider) {
+      providerSelect.value = currentSettings.aiProvider;
+    }
     providerSelect.addEventListener('change', () => {
       const p = providerSelect.value;
+      currentSettings.aiProvider = p;
       if (p === 'ollama') {
         endpointInput.value = 'http://localhost:11434/v1';
         modelInput.value = 'llama3.2';
       } else if (p === 'lmstudio') {
         endpointInput.value = 'http://localhost:1234/v1';
         modelInput.value = 'qwen2.5-7b-instruct';
+      } else if (p === 'groq') {
+        endpointInput.value = 'https://api.groq.com/openai/v1';
+        modelInput.value = 'llama-3.3-70b-versatile';
+      } else if (p === 'openrouter') {
+        endpointInput.value = 'https://openrouter.ai/api/v1';
+        modelInput.value = 'meta-llama/llama-3.2-3b-instruct:free';
+      } else if (p === 'deepseek') {
+        endpointInput.value = 'https://api.deepseek.com/v1';
+        modelInput.value = 'deepseek-chat';
+      } else if (p === 'openai') {
+        endpointInput.value = 'https://api.openai.com/v1';
+        modelInput.value = 'gpt-4o-mini';
       } else if (p === 'custom') {
         endpointInput.value = 'http://localhost:8080/v1';
       }
@@ -80,6 +177,31 @@ export function setupAIDirectorTabUI(deps) {
       currentSettings.aiModelName = modelInput.value;
       engine.endpointUrl = currentSettings.aiEndpointUrl;
       engine.modelName = currentSettings.aiModelName;
+      if (saveSettingsFile) saveSettingsFile();
+      checkEndpointConnection();
+    });
+  }
+
+  if (retrieverPresetSelect) {
+    retrieverPresetSelect.value = currentSettings.aiRetrieverPreset || 'builtin_rag';
+    if (customRetrieverBox) {
+      customRetrieverBox.style.display = retrieverPresetSelect.value === 'custom_endpoint' ? 'block' : 'none';
+    }
+    retrieverPresetSelect.addEventListener('change', () => {
+      currentSettings.aiRetrieverPreset = retrieverPresetSelect.value;
+      engine.contextRetrieverPreset = retrieverPresetSelect.value;
+      if (customRetrieverBox) {
+        customRetrieverBox.style.display = retrieverPresetSelect.value === 'custom_endpoint' ? 'block' : 'none';
+      }
+      if (saveSettingsFile) saveSettingsFile();
+    });
+  }
+
+  if (retrieverEndpointInput) {
+    retrieverEndpointInput.value = currentSettings.aiRetrieverEndpoint || 'http://localhost:11434/v1';
+    retrieverEndpointInput.addEventListener('change', () => {
+      currentSettings.aiRetrieverEndpoint = retrieverEndpointInput.value.trim();
+      engine.contextRetrieverEndpoint = currentSettings.aiRetrieverEndpoint;
       if (saveSettingsFile) saveSettingsFile();
     });
   }
@@ -199,14 +321,6 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
-  // Quick Prompt Chips
-  promptChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      const prompt = chip.dataset.prompt || chip.innerText.trim();
-      handleSendMessage(prompt);
-    });
-  });
-
   if (btnClearChat) {
     btnClearChat.addEventListener('click', () => {
       if (chatMessages) {
@@ -225,7 +339,112 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
-  // 4. Diagnostic Report & Audit Logger
+  // 4. Automated Batch Test Runner
+  const DEFAULT_10_TEST_PROMPTS = [
+    "scale up a bit and spin Y",
+    "make the character twice as big",
+    "turn on sakura sound at 30 percent",
+    "I don't want to see sakura",
+    "switch to waving flag with cyber neon preset",
+    "increase wind speed to 5.5",
+    "enable mouse click through mode",
+    "make it peaceful for coding",
+    "what is the current status",
+    "reset all settings to default"
+  ].join(' //test// ');
+
+  const btnToggleBatch = document.getElementById('btn-ai-toggle-batch');
+  const batchPanel = document.getElementById('ai-batch-test-panel');
+  const batchInput = document.getElementById('ai-batch-prompts-input');
+  const btnRunBatch = document.getElementById('btn-ai-run-batch-test');
+  const btnResetBatch = document.getElementById('btn-ai-reset-batch-prompts');
+  const batchProgress = document.getElementById('ai-batch-progress-bar');
+
+  if (batchInput && !batchInput.value) {
+    batchInput.value = DEFAULT_10_TEST_PROMPTS;
+  }
+
+  if (btnToggleBatch && batchPanel) {
+    btnToggleBatch.addEventListener('click', () => {
+      const isHidden = batchPanel.style.display === 'none';
+      batchPanel.style.display = isHidden ? 'block' : 'none';
+      btnToggleBatch.innerText = isHidden ? (t ? t('ai_btn_hide_batch', '🧪 Hide Auto Test') : '🧪 Hide Auto Test') : (t ? t('ai_btn_batch_test', '🧪 Auto Test') : '🧪 Auto Test');
+    });
+  }
+
+  if (btnResetBatch && batchInput) {
+    btnResetBatch.addEventListener('click', () => {
+      batchInput.value = DEFAULT_10_TEST_PROMPTS;
+      if (batchProgress) {
+        batchProgress.style.display = 'none';
+      }
+    });
+  }
+
+  if (btnRunBatch) {
+    btnRunBatch.addEventListener('click', async () => {
+      const rawText = batchInput ? batchInput.value.trim() : '';
+      if (!rawText) return;
+
+      const prompts = rawText.split(/\/\/test\/\/|\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
+      if (prompts.length === 0) return;
+
+      btnRunBatch.disabled = true;
+      if (btnToggleBatch) btnToggleBatch.disabled = true;
+      if (batchProgress) {
+        batchProgress.style.display = 'block';
+        batchProgress.innerText = `Starting batch test for ${prompts.length} prompts...`;
+      }
+
+      for (let i = 0; i < prompts.length; i++) {
+        const p = prompts[i];
+        if (batchProgress) {
+          batchProgress.innerText = `⏳ Running [${i + 1}/${prompts.length}]: "${p}"...`;
+        }
+        await handleSendMessage(p);
+        await new Promise(res => setTimeout(res, 280));
+      }
+
+      if (batchProgress) {
+        batchProgress.innerText = `✅ Completed all ${prompts.length} prompts! Generating report...`;
+      }
+
+      // Automatically update & open the diagnostic report viewer
+      const fullReport = engine.getFormattedReport();
+      if (reportTextarea) {
+        reportTextarea.value = fullReport;
+      }
+      if (reportBox) {
+        reportBox.style.display = 'block';
+      }
+      if (btnToggleReport) {
+        btnToggleReport.innerText = t ? t('ai_hide_log', '❌ Hide Log') : '❌ Hide Log';
+      }
+
+      // Automatically copy the report to clipboard
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(fullReport);
+        } else if (reportTextarea) {
+          reportTextarea.select();
+          document.execCommand('copy');
+        }
+        if (batchProgress) {
+          batchProgress.innerText = `🎉 All ${prompts.length} tests finished & full report COPIED to clipboard!`;
+        }
+        if (showSpeechBubble) {
+          showSpeechBubble(`Automated Test Complete!\n${prompts.length} Prompts Log Copied! 📋`, 4000);
+        }
+      } catch (e) {
+        console.warn('Clipboard write error:', e);
+      }
+
+      btnRunBatch.disabled = false;
+      if (btnToggleBatch) btnToggleBatch.disabled = false;
+    });
+  }
+
+  // 5. Diagnostic Report & Audit Logger
   const btnCopyReport = document.getElementById('btn-ai-copy-report');
   const btnToggleReport = document.getElementById('btn-ai-toggle-report');
   const reportBox = document.getElementById('ai-report-viewer-box');

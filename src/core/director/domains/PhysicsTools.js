@@ -35,19 +35,19 @@ export const PhysicsTools = {
         const s = ctx.currentSettings;
         if (args.enabled !== undefined) {
           s.enablePhysics = args.enabled;
-          ctx.syncUI('setting-enablePhysics', args.enabled, true);
+          ctx.syncUI('enable-physics', args.enabled, true);
         }
         if (args.gravity !== undefined) {
           s.physicsGravity = args.gravity;
-          ctx.syncUI('setting-physicsGravity', args.gravity);
+          ctx.syncUI('physics-gravity', args.gravity);
         }
         if (args.elasticity !== undefined) {
           s.physicsElasticity = args.elasticity;
-          ctx.syncUI('setting-physicsElasticity', args.elasticity);
+          ctx.syncUI('physics-elasticity', args.elasticity);
         }
         if (args.physicsFloor !== undefined) {
           s.physicsFloor = args.physicsFloor;
-          ctx.syncUI('setting-physicsFloor', args.physicsFloor, true);
+          ctx.syncUI('physics-floor', args.physicsFloor, true);
         }
         return `Physics: ${s.enablePhysics ? 'ENABLED' : 'DISABLED'} (Gravity=${s.physicsGravity}m/s²)`;
       }
@@ -62,9 +62,13 @@ export const PhysicsTools = {
                            ['物理', '重力', '掉落', '弹跳', '抛掷', '下落'].some(w => text.includes(w));
 
     if (isPhysicsTopic) {
-      // Explicit disable requires negation directed at physics/gravity
-      const isDisable = /\b(disable|turn off|stop|shut off|no)\s+(?:window\s+)?(?:physics|gravity)\b/i.test(text) ||
-                        ['关闭物理', '关物理', '停止物理', '关掉物理', '无重力', '关闭重力'].some(w => text.includes(w));
+      // Explicit disable requires negation directed at physics/gravity (avoid loose 'off' like 'bounces off the floor')
+      const isExplicitEnable = /\b(enable|turn on|start|activate)\s+(?:window\s+)?(?:physics|gravity)\b/i.test(text) || ['开启物理', '打开物理', '启用物理'].some(w => text.includes(w));
+      const isDisable = !isExplicitEnable && (
+        /\b(disable|disabled|turn off|turned off|stop|shut off|clear|cancel|don't want|dont want|do not want|dont need|don't need|without|no more|not want)\s+(?:window\s+)?(?:physics|gravity|bounce|toss)?\b/i.test(text) ||
+        /\b(?:physics|gravity)\s+(?:off|disabled|stopped)\b/i.test(text) ||
+        ['关闭物理', '关物理', '停止物理', '关掉物理', '无重力', '关闭重力', '不要物理', '不想要物理', '不需要重力'].some(w => text.includes(w))
+      );
 
       if (isDisable) {
         toolCalls.push({ name: 'setPhysics', args: { enabled: false } });

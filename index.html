@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: file:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: file: *; font-src 'self' data:; connect-src 'self' data: blob: file: *;">
-  <title>3D Desktop Pet</title>
+  <title>Desktop 3D Display</title>
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
   {
@@ -676,8 +676,8 @@
 
         <div class="setting-item">
           <label for="font-scale"><span data-i18n="font_scale">Panel Text Size</span>: <span
-              id="val-font-scale">1.00</span>x</label>
-          <input type="range" id="font-scale" min="0.8" max="2.0" step="0.05" value="1.00">
+              id="val-font-scale">1.50</span>x</label>
+          <input type="range" id="font-scale" min="0.8" max="2.0" step="0.05" value="1.50">
         </div>
 
         <div class="setting-item checkbox">
@@ -689,43 +689,81 @@
       <!-- Tab 10: AI Function Director -->
       <div id="tab-ai" class="studio-tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h4 style="margin: 0; font-size: 13px;" data-i18n="ai_tab_title">🤖 Local LLM AI Function Director</h4>
-          <button id="btn-ai-toggle-config" class="btn" style="padding: 2px 8px; font-size: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; cursor: pointer;" data-i18n="ai_config">⚙️ LLM Config</button>
+          <h4 style="margin: 0; font-size: 1.05em;" data-i18n="ai_tab_title">🤖 Local LLM AI Function Director</h4>
+          <div style="display: flex; gap: 4px;">
+            <button id="btn-ai-toggle-batch" class="btn" style="padding: 3px 8px; font-size: 0.85em; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.4); color: #c084fc; cursor: pointer;" data-i18n="ai_btn_batch_test">🧪 Auto Test</button>
+            <button id="btn-ai-toggle-config" class="btn" style="padding: 3px 8px; font-size: 0.85em; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; cursor: pointer;" data-i18n="ai_config">⚙️ LLM Config</button>
+          </div>
         </div>
 
-        <div class="setting-item checkbox" style="margin-bottom: 8px;">
+        <div class="setting-item checkbox" style="margin-bottom: 6px;">
           <input type="checkbox" id="ai-director-enable" checked>
           <label for="ai-director-enable" data-i18n="ai_enable_toggle">Enable AI Function Directing</label>
         </div>
 
+        <div class="setting-item checkbox" style="margin-bottom: 8px;">
+          <input type="checkbox" id="ai-context-retrieval-enable" checked>
+          <label for="ai-context-retrieval-enable" data-i18n="ai_context_retrieval_toggle">🧠 Enable App Knowledge & Context Augmentation (RAG)</label>
+        </div>
+
+        <!-- Collapsible Batch Prompt Test Runner Panel -->
+        <div id="ai-batch-test-panel" style="display: none; background: rgba(18, 14, 28, 0.85); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.85em; font-weight: 600; color: #d8b4fe;" data-i18n="ai_batch_title">🧪 Automated Batch Prompt Runner</span>
+            <span style="font-size: 0.75em; color: #a855f7;">Delimiter: <code>//test//</code></span>
+          </div>
+          <textarea id="ai-batch-prompts-input" placeholder="Enter prompts separated by //test//..." style="width: 100%; height: 95px; background: #0c0a14; border: 1px solid #3b2a59; border-radius: 4px; color: #e9d5ff; font-family: monospace; font-size: 0.82em; padding: 6px; resize: vertical; box-sizing: border-box; line-height: 1.4;"></textarea>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button id="btn-ai-run-batch-test" class="btn" style="flex: 1; padding: 5px 8px; font-size: 0.85em; font-weight: 600; background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%); color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_run_batch">▶ Run 10 Batch Prompts</button>
+            <button id="btn-ai-reset-batch-prompts" class="btn" style="padding: 5px 8px; font-size: 0.85em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 4px; cursor: pointer;" title="Reset Default 10 Prompts" data-i18n="ai_btn_reset_batch">🔄 10 Presets</button>
+          </div>
+          <div id="ai-batch-progress-bar" style="display: none; margin-top: 6px; font-size: 0.8em; color: #34d399; font-weight: 600; padding: 4px 6px; background: rgba(16,185,129,0.1); border-radius: 4px; border: 1px solid rgba(16,185,129,0.25);"></div>
+        </div>
+
         <!-- Collapsible Endpoint Config Section -->
         <div id="ai-settings-panel" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
+          <!-- Live Connection Status Banner -->
+          <div id="ai-connection-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; padding: 5px 8px; border-radius: 4px; margin-bottom: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;">
+            <span id="ai-status-text">⚡ Status: Local Ollama offline. Operating in fallback mode.</span>
+            <button id="btn-ai-ping-endpoint" class="btn" style="padding: 2px 6px; font-size: 0.85em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer;">🔄 Check</button>
+          </div>
+
           <div class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-provider-select" style="font-size: 10px; color: #94a3b8;" data-i18n="ai_provider">Provider Preset:</label>
-            <select id="ai-provider-select" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 2px 6px; font-size: 11px;">
-              <option value="ollama" selected>Ollama (localhost:11434)</option>
-              <option value="lmstudio">LM Studio (localhost:1234)</option>
+            <label for="ai-provider-select" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_provider">Provider Preset:</label>
+            <select id="ai-provider-select" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 3px 6px; font-size: 0.9em;">
+              <option value="ollama" selected>Ollama Local (localhost:11434 - llama3.2)</option>
+              <option value="lmstudio">LM Studio Local (localhost:1234)</option>
+              <option value="groq">Groq Cloud (Fast Free - Llama-3.3-70B)</option>
+              <option value="openrouter">OpenRouter Cloud (Free Tier Models)</option>
+              <option value="deepseek">DeepSeek API (deepseek-chat)</option>
+              <option value="openai">OpenAI (gpt-4o-mini)</option>
               <option value="custom">Custom OpenAI Endpoint</option>
             </select>
           </div>
           <div class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-endpoint-url" style="font-size: 10px; color: #94a3b8;" data-i18n="ai_endpoint">Endpoint URL:</label>
-            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 100%;">
+            <label for="ai-endpoint-url" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_endpoint">Endpoint URL:</label>
+            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
+          </div>
+          <div class="setting-item" style="margin-bottom: 6px;">
+            <label for="ai-model-name" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_model">Model Name:</label>
+            <input type="text" id="ai-model-name" value="llama3.2" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
+          </div>
+          <div id="ai-api-key-container" class="setting-item" style="margin-bottom: 6px;">
+            <label for="ai-api-key" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_api_key">API Key (Optional for Local, Required for Cloud):</label>
+            <input type="password" id="ai-api-key" placeholder="Enter API key (gsk_..., sk-or-..., etc.)" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
           </div>
           <div class="setting-item" style="margin-bottom: 0;">
-            <label for="ai-model-name" style="font-size: 10px; color: #94a3b8;" data-i18n="ai_model">Model Name:</label>
-            <input type="text" id="ai-model-name" value="llama3.2" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 100%;">
+            <label for="ai-retriever-preset" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_retriever_preset">Knowledge Retriever Engine:</label>
+            <select id="ai-retriever-preset" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 3px 6px; font-size: 0.9em;">
+              <option value="builtin_rag" selected>Built-in App Knowledge Base + Live Telemetry (RAG)</option>
+              <option value="deep_inspection">Deep Subsystem Telemetry (Full Architecture Spec)</option>
+              <option value="custom_endpoint">Dual-Agent / Secondary AI Endpoint</option>
+            </select>
           </div>
-        </div>
-
-        <!-- Quick Prompt Chips Bar -->
-        <div class="ai-chips-bar" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px;">
-          <button class="ai-prompt-chip" data-prompt="make the model spin faster on Y axis">🌀 Spin Fast (2.5x)</button>
-          <button class="ai-prompt-chip" data-prompt="turn on sakura rain and floating bobbing">🌸 Sakura & Float</button>
-          <button class="ai-prompt-chip" data-prompt="enable gravity physics and floor bounce">⚡ Gravity Physics</button>
-          <button class="ai-prompt-chip" data-prompt="scale model to 1.5x">🎯 Scale 1.5x</button>
-          <button class="ai-prompt-chip" data-prompt="turn on snowfall winter particles">❄️ Snowfall</button>
-          <button class="ai-prompt-chip" data-prompt="reset model and camera position">🔄 Reset Center</button>
+          <div id="ai-custom-retriever-box" style="display: none; margin-top: 6px;">
+            <label for="ai-retriever-endpoint" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_retriever_endpoint">Secondary Context AI Endpoint:</label>
+            <input type="text" id="ai-retriever-endpoint" value="http://localhost:11434/v1" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
+          </div>
         </div>
 
         <!-- Chat Conversation Messages Window -->
@@ -742,20 +780,20 @@
 
         <!-- Chat Input Field and Send Bar -->
         <div class="ai-input-bar" style="display: flex; gap: 6px; margin-top: 6px;">
-          <input type="text" id="ai-chat-input" placeholder="Tell AI what to do (e.g. 'scale to 1.8x and spin')..." data-i18n-placeholder="ai_input_placeholder" style="flex: 1; background: #1a1a20; border: 1px solid #3a3a46; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 11.5px;">
-          <button id="btn-ai-send" class="btn" style="padding: 6px 14px; font-size: 11px; font-weight: 600; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer;" data-i18n="ai_send">Send</button>
-          <button id="btn-ai-clear" class="btn" title="Clear Chat" style="padding: 6px 10px; font-size: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 6px; cursor: pointer;">🧹</button>
+          <input type="text" id="ai-chat-input" placeholder="Tell AI what to do (e.g. 'scale to 1.8x and spin')..." data-i18n-placeholder="ai_input_placeholder" style="flex: 1; background: #1a1a20; border: 1px solid #3a3a46; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 0.95em;">
+          <button id="btn-ai-send" class="btn" style="padding: 6px 14px; font-size: 0.9em; font-weight: 600; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer;" data-i18n="ai_send">Send</button>
+          <button id="btn-ai-clear" class="btn" title="Clear Chat" style="padding: 6px 10px; font-size: 0.9em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 6px; cursor: pointer;">🧹</button>
         </div>
 
         <!-- AI Diagnostic Log Report Actions -->
         <div style="display: flex; gap: 6px; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
-          <button id="btn-ai-copy-report" class="btn" style="flex: 1; padding: 4px 8px; font-size: 10.5px; font-weight: 600; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_copy_report">📋 Copy Diagnostic Report</button>
-          <button id="btn-ai-toggle-report" class="btn" style="padding: 4px 8px; font-size: 10.5px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_view_report">🔍 View Log</button>
+          <button id="btn-ai-copy-report" class="btn" style="flex: 1; padding: 5px 8px; font-size: 0.85em; font-weight: 600; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_copy_report">📋 Copy Diagnostic Report</button>
+          <button id="btn-ai-toggle-report" class="btn" style="padding: 5px 8px; font-size: 0.85em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_view_report">🔍 View Log</button>
         </div>
 
         <!-- Live Diagnostic Report Viewer Box -->
         <div id="ai-report-viewer-box" style="display: none; margin-top: 6px;">
-          <textarea id="ai-report-viewer" readonly style="width: 100%; height: 110px; background: #0c0d12; border: 1px solid #282a36; border-radius: 4px; color: #a5b4fc; font-family: monospace; font-size: 9.5px; padding: 6px; resize: vertical;"></textarea>
+          <textarea id="ai-report-viewer" readonly style="width: 100%; height: 120px; background: #0c0d12; border: 1px solid #282a36; border-radius: 4px; color: #a5b4fc; font-family: monospace; font-size: 0.8em; padding: 6px; resize: vertical;"></textarea>
         </div>
       </div>
 
