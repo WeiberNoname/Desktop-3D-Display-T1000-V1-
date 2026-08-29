@@ -39,15 +39,12 @@
       style="display: flex; align-items: center; gap: 4px; margin-bottom: 10px; flex-shrink: 0;">
       <button id="tab-nav-left" class="btn studio-tab-nav-arrow" title="Previous Tab / Scroll Left" data-i18n-title="nav_prev_tab">◀</button>
       <div id="studio-tab-bar" class="studio-tab-bar">
-        <button class="studio-tab-btn active" data-tab="tab-display" data-i18n="tab_display">🎯 Display</button>
-        <button class="studio-tab-btn" data-tab="tab-motion" data-i18n="tab_motion">🌀 Motion</button>
+        <button class="studio-tab-btn active" data-tab="tab-ai" data-i18n="tab_ai">🤖 AI Director</button>
+        <button class="studio-tab-btn" data-tab="tab-assets" data-i18n="tab_assets">📦 Asset Hub</button>
+        <button class="studio-tab-btn" data-tab="tab-display" data-i18n="tab_display">🐰 Mascot</button>
         <button class="studio-tab-btn" data-tab="tab-lighting" data-i18n="tab_lighting">🔦 Lighting</button>
-        <button class="studio-tab-btn" data-tab="tab-atmosphere" data-i18n="tab_atmosphere">🌸 Atmosphere</button>
-        <button class="studio-tab-btn" data-tab="tab-sound" data-i18n="tab_sound">🎵 Sound</button>
         <button class="studio-tab-btn" data-tab="tab-texture" data-i18n="tab_texture">🎨 Texture</button>
-        <button class="studio-tab-btn" data-tab="tab-physics" data-i18n="tab_physics">⚡ Physics</button>
-        <button class="studio-tab-btn" data-tab="tab-camera" data-i18n="tab_camera">🎥 Camera</button>
-        <button class="studio-tab-btn" data-tab="tab-ai" data-i18n="tab_ai">🤖 AI Director</button>
+        <button class="studio-tab-btn" data-tab="tab-sound" data-i18n="tab_sound">🎵 Sound</button>
         <button class="studio-tab-btn" data-tab="tab-system" data-i18n="tab_system">⚙️ System</button>
       </div>
       <button id="tab-nav-right" class="btn studio-tab-nav-arrow" title="Next Tab / Scroll Right" data-i18n-title="nav_next_tab">▶</button>
@@ -56,122 +53,856 @@
     <!-- Studio Tab Content Container -->
     <div class="studio-tab-content-container">
 
-      <!-- Tab 1: Display & Model -->
-      <div id="tab-display" class="studio-tab-content active">
-        <div class="setting-item">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <label style="margin-bottom: 0;" data-i18n="active_mascot">Active Mascot</label>
-            <button id="refresh-previews-btn" data-i18n="refresh_previews">Refresh Previews 🔄</button>
+      <!-- Tab 1: AI Function Director (Primary Studio Control) -->
+      <div id="tab-ai" class="studio-tab-content active">
+        <!-- Live AI Header Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="ai_tab_title">🤖 AI Function Director</span>
+            <div style="display: flex; gap: 4px;">
+              <button id="btn-ai-toggle-batch" class="studio-btn-ghost" style="padding: 2px 8px; font-size: 0.85em;" data-i18n="ai_btn_batch_test">🧪 Auto Test</button>
+              <button id="btn-ai-toggle-config" class="studio-btn-ghost" style="padding: 2px 8px; font-size: 0.85em;" data-i18n="ai_config">⚙️ LLM Config</button>
+            </div>
           </div>
-          <input type="hidden" id="model-select" value="procedural">
-          <div id="model-select-grid" class="mascot-grid"></div>
+          
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="ai_enable_toggle">AI Function Directing</span>
+              <span class="studio-row-sub">Physical control of 3D mascot, lighting & audio</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="ai-director-enable" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="ai_context_retrieval_toggle">AI Context & State Awareness</span>
+              <span class="studio-row-sub" data-i18n="ai_context_retrieval_sub">Feed real-time app telemetry and state to AI</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="ai-context-retrieval-enable" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
         </div>
 
-        <div class="setting-item" id="anim-select-container">
-          <label for="anim-select" data-i18n="active_animation">Active Animation</label>
-          <select id="anim-select">
-            <option value="none" data-i18n="anim_static">None (Static Pose)</option>
-          </select>
+        <!-- Collapsible Batch Prompt Test Runner Panel -->
+        <div id="ai-batch-test-panel" class="studio-card" style="display: none;">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="ai_batch_title">🧪 Automated Batch Prompt Runner</span>
+            <span style="font-size: 0.8em; color: #f39c12;">Delimiter: <code>//test//</code></span>
+          </div>
+          <textarea id="ai-batch-prompts-input" placeholder="Enter prompts separated by //test//..." style="width: 100%; height: 80px; background: #222228; border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; padding: 6px 8px; resize: vertical; box-sizing: border-box; line-height: 1.4; outline: none;"></textarea>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button id="btn-ai-run-batch-test" class="studio-btn-primary" style="flex: 1;" data-i18n="ai_btn_run_batch">▶ Run 10 Batch Prompts</button>
+            <button id="btn-ai-reset-batch-prompts" class="studio-btn-ghost" title="Reset Default 10 Prompts" data-i18n="ai_btn_reset_batch">🔄 10 Presets</button>
+          </div>
+          <div id="ai-batch-progress-bar" style="display: none; margin-top: 6px; font-size: 0.82em; color: #34d399; font-weight: 600; padding: 4px 6px; background: rgba(16,185,129,0.12); border-radius: 4px; border: 1px solid rgba(16,185,129,0.3);"></div>
         </div>
 
-        <div class="setting-item">
-          <label for="win-width"><span data-i18n="win_width">Window Width</span>: <span
-              id="val-width">350</span>px</label>
-          <input type="range" id="win-width" min="30" max="1920" value="350">
+        <!-- Collapsible Endpoint Config Section -->
+        <div id="ai-settings-panel" class="studio-card" style="display: none;">
+          <div class="studio-card-header">
+            <span class="studio-card-title">⚙️ LLM & Endpoint Configuration</span>
+          </div>
+
+          <!-- Live Connection Status Banner -->
+          <div id="ai-connection-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82em; padding: 5px 8px; border-radius: 5px; margin-bottom: 8px; background: rgba(243, 156, 18, 0.12); border: 1px solid rgba(243, 156, 18, 0.35); color: #f39c12;">
+            <span id="ai-status-text">⚡ Status: Checking neural endpoint connection...</span>
+            <button id="btn-ai-ping-endpoint" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;">🔄 Check</button>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-provider-select" class="studio-row-title" data-i18n="ai_provider">Provider Preset</label>
+            </div>
+            <select id="ai-provider-select" class="studio-select" style="width: 175px;">
+              <option value="ollama" selected>Ollama Local (localhost:11434 - llama3.2)</option>
+              <option value="lmstudio">LM Studio Local (localhost:1234)</option>
+              <option value="groq">Groq Cloud (Fast Free - Llama-3.3-70B)</option>
+              <option value="openrouter">OpenRouter Cloud (Free Tier Models)</option>
+              <option value="deepseek">DeepSeek API (deepseek-chat)</option>
+              <option value="openai">OpenAI (gpt-4o-mini)</option>
+              <option value="custom">Custom OpenAI Endpoint</option>
+            </select>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-endpoint-url" class="studio-row-title" data-i18n="ai_endpoint">Endpoint URL</label>
+            </div>
+            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-model-name" class="studio-row-title" data-i18n="ai_model">Model Name</label>
+            </div>
+            <input type="text" id="ai-model-name" value="llama3.2" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div id="ai-api-key-container" class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-api-key" class="studio-row-title" data-i18n="ai_api_key">API Key</label>
+            </div>
+            <input type="password" id="ai-api-key" placeholder="Optional for local" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-retriever-preset" class="studio-row-title" data-i18n="ai_retriever_preset">Knowledge Retriever</label>
+            </div>
+            <select id="ai-retriever-preset" class="studio-select" style="width: 175px;">
+              <option value="builtin_rag" selected>Built-in RAG Telemetry</option>
+              <option value="deep_inspection">Deep Subsystem Spec</option>
+              <option value="custom_endpoint">Secondary Endpoint</option>
+            </select>
+          </div>
+
+          <div id="ai-custom-retriever-box" class="studio-row" style="display: none;">
+            <div class="studio-row-label">
+              <label for="ai-retriever-endpoint" class="studio-row-title" data-i18n="ai_retriever_endpoint">Secondary Endpoint</label>
+            </div>
+            <input type="text" id="ai-retriever-endpoint" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
+          </div>
         </div>
 
-        <div class="setting-item">
-          <label for="win-height"><span data-i18n="win_height">Window Height</span>: <span
-              id="val-height">350</span>px</label>
-          <input type="range" id="win-height" min="30" max="1080" value="350">
-        </div>
+        <!-- Chat Conversation Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title">💬 Live Assistant Interaction</span>
+            <button id="btn-ai-clear" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;" title="Clear Conversation">🧹 Clear</button>
+          </div>
 
-        <div class="setting-item">
-          <label for="model-scale"><span data-i18n="model_scale">Model Scale</span>: <span
-              id="val-scale">1.00</span>x</label>
-          <input type="range" id="model-scale" min="0.1" max="5.0" step="0.01" value="1.00">
+          <!-- Chat Conversation Messages Window -->
+          <div id="ai-chat-messages" class="ai-chat-container">
+            <div class="ai-msg-bubble ai-msg-bot">
+              <span class="ai-msg-avatar">🤖</span>
+              <div class="ai-msg-body">
+                <div class="ai-msg-text" data-i18n="ai_welcome_msg">
+                  Hello! I am your AI Function Director. Tell me what you'd like to adjust (scale, rotation, physics, sakura rain, model, or camera) and I'll execute it for you!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Field and Send Bar -->
+          <div class="ai-input-bar" style="display: flex; gap: 6px; margin-top: 6px;">
+            <input type="text" id="ai-chat-input" placeholder="Tell AI what to do (e.g. 'scale to 1.8x and spin')..." data-i18n-placeholder="ai_input_placeholder" class="studio-select" style="flex: 1; padding: 6px 10px; font-size: 0.9em;">
+            <button id="btn-ai-send" class="studio-btn-primary" style="padding: 6px 14px;" data-i18n="ai_send">Send</button>
+          </div>
+
+          <!-- Diagnostic Log Report Actions -->
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button id="btn-ai-copy-report" class="studio-btn-ghost" style="flex: 1; font-size: 0.85em;" data-i18n="ai_btn_copy_report">📋 Copy Report</button>
+            <button id="btn-ai-toggle-report" class="studio-btn-ghost" style="font-size: 0.85em;" data-i18n="ai_btn_view_report">🔍 View Log</button>
+          </div>
+
+          <!-- Live Diagnostic Report Viewer Box -->
+          <div id="ai-report-viewer-box" style="display: none; margin-top: 6px;">
+            <textarea id="ai-report-viewer" readonly style="width: 100%; height: 110px; background: #222228; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; padding: 6px; resize: vertical; box-sizing: border-box;"></textarea>
+          </div>
         </div>
       </div>
 
-      <!-- Tab 2: Motion & Spin -->
-      <div id="tab-motion" class="studio-tab-content">
-        <div class="setting-item">
-          <label for="target-fps"><span data-i18n="target_fps">Target FPS Speed</span>: <span
-              id="val-target-fps">60</span> FPS</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="range" id="target-fps" min="15" max="240" step="1" value="60" style="flex: 1;">
-            <input type="number" id="num-target-fps" min="15" max="240" step="1" value="60"
-              style="width: 58px; padding: 3px 6px; background: #181818; border: 1px solid #3a3a3a; color: #fff; border-radius: 4px; font-size: 12px; text-align: center;">
+      <!-- Tab 2: Universal Asset Hub & Ingestion -->
+      <div id="tab-assets" class="studio-tab-content">
+        <!-- Ingestion Dropzone Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="asset_hub_title">📦 Universal Asset Importer</span>
+          </div>
+
+          <input type="file" id="asset-hub-file-input" multiple accept=".glb,.gltf,.fbx,.obj,.png,.jpg,.jpeg,.webp,.svg,.mid,.midi,.musicxml,.xml" style="display: none;">
+          <div id="asset-hub-dropzone" class="studio-dropzone">
+            <span style="font-size: 1.6em;">📥</span>
+            <div style="font-size: 0.95em; font-weight: 600; color: #ffffff; margin-top: 4px;" data-i18n="asset_drop_title">Drag & Drop Any Asset File Here</div>
+            <div style="font-size: 0.8em; color: #d1d5db; margin: 3px 0 8px 0;" data-i18n="asset_drop_sub">Auto-detects 3D Models (.glb, .fbx), Textures (.png, .jpg), and Music (.mid, .xml)</div>
+            <button id="btn-asset-hub-browse" class="asset-btn-action" style="padding: 5px 16px; width: auto; display: inline-block;" data-i18n="asset_browse_btn">📁 Browse Files</button>
           </div>
         </div>
 
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="model-bobbing" checked>
-          <label for="model-bobbing" data-i18n="idle_bobbing">Enable Idle Bobbing</label>
+        <!-- Centralized Asset Library Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="asset_library_title">🗃️ Asset Library</span>
+            <span id="asset-count-badge" class="studio-badge studio-badge-amber">0 Assets</span>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div class="asset-filter-bar">
+            <button class="asset-filter-btn active" data-filter="all" data-i18n="asset_filter_all">All</button>
+            <button class="asset-filter-btn" data-filter="model" data-i18n="asset_filter_models">🧊 3D Models</button>
+            <button class="asset-filter-btn" data-filter="texture" data-i18n="asset_filter_textures">🖼️ Textures</button>
+            <button class="asset-filter-btn" data-filter="audio" data-i18n="asset_filter_audio">🎼 Music & MIDI</button>
+          </div>
+
+          <!-- Dynamic Asset Library Grid -->
+          <div id="asset-library-grid" class="asset-library-grid"></div>
         </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="lock-position">
-          <label for="lock-position" data-i18n="lock_position">Lock Mascot Position</label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="view-only">
-          <label for="view-only"><span data-i18n="view_only">View Only Mode (Fades on Hover)</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="view_only_sub">(Toggle with Ctrl + V)</span></label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="gpu-optimize" checked>
-          <label for="gpu-optimize"><span data-i18n="gpu_optimize">Force High-Performance GPU</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="gpu_sub">(Requires Restart)</span></label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="gpu-low-power">
-          <label for="gpu-low-power"><span data-i18n="gpu_low_power">Low-Power GPU Battery Saver</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="gpu_low_power_sub">(Requires Restart)</span></label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="idle-fps-saver">
-          <label for="idle-fps-saver"><span data-i18n="idle_fps_saver">Idle Frame Rate Saver (30 FPS)</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="idle_fps_saver_sub">(Caps idle rendering)</span></label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="dynamic-battery-saver">
-          <label for="dynamic-battery-saver"><span data-i18n="dynamic_battery_saver">Dynamic Battery Saver</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="dynamic_battery_saver_sub">(Auto-throttles FPS when idle/unfocused)</span></label>
-        </div>
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="mouse-optimize" checked>
-          <label for="mouse-optimize"><span data-i18n="mouse_optimize">Seamless Performance Mode</span> <span
-              style="font-size: 10px; opacity: 0.7;" data-i18n="mouse_sub">(Throttled Proxy)</span></label>
+      </div>
+
+      <!-- Tab 3: Display & Model -->
+      <div id="tab-display" class="studio-tab-content">
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="active_mascot">🎯 Mascot & Model Library</span>
+            <span id="mascot-count-badge" class="studio-badge studio-badge-amber">2 Mascots</span>
+          </div>
+
+          <!-- Active Mascot Preview Container (Standardized) -->
+          <div class="texture-preview-container" style="margin-top: 4px;">
+            <img id="mascot-active-preview-img" class="texture-preview-thumbnail" alt="Mascot Preview" src="">
+            <div class="texture-info">
+              <div id="mascot-active-name" class="texture-info-title">Default Bunny 🐰</div>
+              <div class="texture-info-sub" data-i18n="mascot_active_applied">Active 3D Mascot Applied</div>
+            </div>
+          </div>
+
+          <!-- Mascot Selection Grid (Standardized) -->
+          <input type="hidden" id="model-select" value="procedural">
+          <div id="model-select-grid" class="studio-select-grid" style="margin-top: 8px;"></div>
         </div>
 
-        <div class="settings-section">
-          <h4 data-i18n="spin_controls">Axis Spinning</h4>
-          <div class="spin-controls-grid">
-            <div class="spin-row">
-              <input type="checkbox" id="spin-x">
-              <label for="spin-x" data-i18n="axis_x">X Axis</label>
-              <input type="range" id="speed-x" min="-5.0" max="5.0" step="0.1" value="1.0">
-              <span class="spin-val" id="val-speed-x">1.0</span>
+        <!-- Mascot Animation Controls Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="active_animation">🎬 Mascot Animations</span>
+          </div>
+          <div class="studio-row" id="anim-select-container">
+            <div class="studio-row-label">
+              <label for="anim-select" class="studio-row-title" data-i18n="active_animation">Active Animation</label>
+              <span class="studio-row-sub">Skeletal animation clip</span>
             </div>
-            <div class="spin-row">
-              <input type="checkbox" id="spin-y">
-              <label for="spin-y" data-i18n="axis_y">Y Axis</label>
-              <input type="range" id="speed-y" min="-5.0" max="5.0" step="0.1" value="1.0">
-              <span class="spin-val" id="val-speed-y">1.0</span>
-            </div>
-            <div class="spin-row">
-              <input type="checkbox" id="spin-z">
-              <label for="spin-z" data-i18n="axis_z">Z Axis</label>
-              <input type="range" id="speed-z" min="-5.0" max="5.0" step="0.1" value="1.0">
-              <span class="spin-val" id="val-speed-z">1.0</span>
+            <select id="anim-select" class="studio-select" style="width: 150px;">
+              <option value="none" data-i18n="anim_static">None (Static Pose)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Stage Lighting -->
+      <div id="tab-lighting" class="studio-tab-content">
+        <!-- 3D Preview Viewport Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="preview_title">👁️ 3D Stage & Lighting Viewport</span>
+          </div>
+
+          <div id="settings-preview-container" class="settings-preview-container">
+            <canvas id="settings-preview-canvas" class="settings-preview-canvas"></canvas>
+            <div class="preview-hud-controls">
+              <button id="preview-btn-zoom-in" class="btn preview-hud-btn" title="Zoom In (+)" data-i18n-title="preview_zoom_in">🔍➕</button>
+              <button id="preview-btn-zoom-out" class="btn preview-hud-btn" title="Zoom Out (-)" data-i18n-title="preview_zoom_out">🔍➖</button>
+              <button id="preview-btn-reset" class="btn preview-hud-btn" title="Reset Preview Camera" data-i18n-title="preview_reset_cam">🔄</button>
+              <button id="preview-btn-helpers" class="btn preview-hud-btn active" title="Toggle Spotlight Rays & Frustums" data-i18n-title="toggle_helpers">🔦</button>
+              <button id="preview-btn-front" class="btn preview-hud-btn" data-i18n="cam_front">Front</button>
+              <button id="preview-btn-top" class="btn preview-hud-btn" data-i18n="cam_top">Top</button>
+              <button id="preview-btn-iso" class="btn preview-hud-btn" data-i18n="cam_iso">Iso</button>
             </div>
           </div>
         </div>
 
-        <!-- Real-Time Performance & Motion Magnitude Monitor -->
-        <div class="settings-section" id="perf-monitor-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <h4 style="margin: 0;" data-i18n="perf_monitor_title">📊 Performance & Motion Monitor</h4>
+        <!-- Ambient Lighting Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title">💡 Ambient Stage Illumination</span>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="enable_studio_lights">General Studio Ambient Lighting</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="enable-studio-lights" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ambient-intensity" class="studio-row-title" data-i18n="ambient_intensity">Ambient Light Brightness</label>
+              <span class="studio-row-sub">Stage illumination multiplier</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="ambient-intensity" class="studio-number-input" min="0.0" max="2.0" step="0.05" value="0.70">
+              <span class="studio-unit-suffix">x</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button id="btn-dark-stage" class="studio-btn-ghost" style="flex: 1;" data-i18n="dark_stage_preset">🎭 Dark Stage Mode</button>
+            <button id="btn-dual-concert" class="studio-btn-ghost" style="flex: 1; color: #f39c12; border-color: rgba(243,156,18,0.4);" data-i18n="dual_concert_preset">🎸 Dual Concert</button>
+          </div>
+        </div>
+
+        <!-- Spotlight Sources Container Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="spotlight_section">🔦 Stage Spotlight Sources</span>
+            <button id="add-spotlight-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.4);" data-i18n="add_spotlight">➕ Add Source</button>
+          </div>
+
+          <div id="spotlight-cards-container"></div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Texture & Custom 3D Mesh -->
+      <div id="tab-texture" class="studio-tab-content">
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="texture_title">🎨 Custom Texture & Flag Cloth</span>
+            <button id="texture-reset-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 9.5px;" data-i18n="texture_reset_btn">🔄 Reset</button>
+          </div>
+
+          <!-- Hidden File Input for Image Loading Compatibility -->
+          <input type="file" id="texture-file-input" accept="image/*" style="display: none;">
+
+          <!-- Active Texture Preview Container -->
+          <div class="texture-preview-container" style="margin-top: 4px;">
+            <img id="texture-preview-img" class="texture-preview-thumbnail" alt="Texture Preview" src="">
+            <div class="texture-info">
+              <div id="texture-filename" class="texture-info-title">Preset: default</div>
+              <div class="texture-info-sub" data-i18n="texture_active_applied">Active Texture Applied to Mesh</div>
+            </div>
+          </div>
+
+          <!-- Flag Styles & Custom Texture Selection Grid -->
+          <div class="studio-card-header" style="margin-top: 10px;">
+            <span class="studio-card-title" data-i18n="texture_presets_title">🏳️ Flag Styles & Textures</span>
+            <span id="texture-count-badge" class="studio-badge studio-badge-amber">5 Presets</span>
+          </div>
+          <div id="texture-select-grid" class="studio-select-grid" style="max-height: 200px;"></div>
+
+          <!-- Real-Time Cloth Wave & Wind -->
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
+            <div class="studio-card-title" style="margin-bottom: 6px;" data-i18n="flag_wind_title">💨 Flag Wind Wave Physics</div>
+            
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="flag-wind-speed" class="studio-row-title" data-i18n="flag_wind_speed">Wind Speed</label>
+                <span class="studio-row-sub">Cloth flutter velocity</span>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="flag-wind-speed" class="studio-number-input" min="0.5" max="10.0" step="0.5" value="3.5">
+                <span class="studio-unit-suffix">x</span>
+              </div>
+            </div>
+
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="flag-wave-intensity" class="studio-row-title" data-i18n="flag_wave_intensity">Wave Amplitude</label>
+                <span class="studio-row-sub">Cloth displacement height</span>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="flag-wave-intensity" class="studio-number-input" min="0.05" max="1.50" step="0.05" value="0.35">
+                <span class="studio-unit-suffix">x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Texture Mapping & Shader Controls -->
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
+            <div class="studio-card-title" style="margin-bottom: 6px;" data-i18n="texture_mapping_title">📐 Mapping & Surface Shaders</div>
+            
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="texture-repeat-x" class="studio-row-title" data-i18n="texture_repeat_x">Texture Repeat X</label>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="texture-repeat-x" class="studio-number-input" min="1.0" max="6.0" step="0.5" value="1.0">
+                <span class="studio-unit-suffix">x</span>
+              </div>
+            </div>
+
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="texture-repeat-y" class="studio-row-title" data-i18n="texture_repeat_y">Texture Repeat Y</label>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="texture-repeat-y" class="studio-number-input" min="1.0" max="6.0" step="0.5" value="1.0">
+                <span class="studio-unit-suffix">x</span>
+              </div>
+            </div>
+
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="texture-roughness" class="studio-row-title" data-i18n="texture_roughness">Surface Roughness</label>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="texture-roughness" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.50">
+              </div>
+            </div>
+
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="texture-metalness" class="studio-row-title" data-i18n="texture_metalness">Surface Metalness</label>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="texture-metalness" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.05">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Sound & Procedural Audio FX -->
+      <div id="tab-sound" class="studio-tab-content">
+        <!-- Ambient Synthesizer Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="sound_title">🎵 Audio & Ambient Synthesizer</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.85em; color: #d1d5db;" data-i18n="sound_master_enable">Master</span>
+              <label class="studio-switch">
+                <input type="checkbox" id="sound-master-enable" checked>
+                <span class="studio-slider-knob"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="sound-master-vol" class="studio-row-title" data-i18n="sound_master_vol">Master Audio Volume</label>
+              <span class="studio-row-sub">Overall synthesizer volume multiplier</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="sound-master-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.80">
+              <span class="studio-unit-suffix">vol</span>
+            </div>
+          </div>
+
+          <!-- Track 1: Snow Atmosphere -->
+          <div id="sound-card-snow" class="studio-row sound-track-strip" style="align-items: center;">
+            <div class="studio-row-label">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.1em;">❄️</span>
+                <div>
+                  <div class="studio-row-title" data-i18n="sound_snow_title">Snow Atmosphere</div>
+                  <div class="studio-row-sub" style="display: flex; align-items: center; gap: 6px;">
+                    <label for="snow-fall" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                      <input type="checkbox" id="snow-fall" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
+                      <span data-i18n="snow_fall">Snow FX</span>
+                    </label>
+                    <label for="sound-snow-sync" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                      <input type="checkbox" id="sound-snow-sync" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
+                      <span data-i18n="sound_snow_sync">Auto-sync</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-sound-snow-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
+              <div class="studio-number-wrapper">
+                <input type="number" id="sound-snow-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.70">
+                <span class="studio-unit-suffix">vol</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Track 2: Sakura Spring Melody -->
+          <div id="sound-card-sakura" class="studio-row sound-track-strip" style="align-items: center;">
+            <div class="studio-row-label">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.1em;">🌸</span>
+                <div>
+                  <div class="studio-row-title" data-i18n="sound_sakura_title">Sakura Spring Melody</div>
+                  <div class="studio-row-sub" style="display: flex; align-items: center; gap: 6px;">
+                    <label for="sakura-rain" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                      <input type="checkbox" id="sakura-rain" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
+                      <span data-i18n="sakura_rain">Sakura FX</span>
+                    </label>
+                    <label for="sound-sakura-sync" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                      <input type="checkbox" id="sound-sakura-sync" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
+                      <span data-i18n="sound_sakura_sync">Auto-sync</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-sound-sakura-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
+              <div class="studio-number-wrapper">
+                <input type="number" id="sound-sakura-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.65">
+                <span class="studio-unit-suffix">vol</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Track 3: Simple Drum Melody -->
+          <div id="sound-card-drum" class="studio-row sound-track-strip" style="align-items: center;">
+            <div class="studio-row-label">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.1em;">🥁</span>
+                <div>
+                  <div class="studio-row-title" data-i18n="sound_drum_title">Simple Drum Melody</div>
+                  <span class="studio-row-sub">Lo-fi rhythm synthesizer beat</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-sound-drum-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
+              <div class="studio-number-wrapper">
+                <input type="number" id="sound-drum-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.75">
+                <span class="studio-unit-suffix">vol</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grand Piano & Sheet Music Studio Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="piano_studio_title">🎹 Piano & Sheet Music Studio</span>
+            <div style="display: flex; gap: 4px;">
+              <button id="btn-piano-mode-midi" class="studio-btn-primary" style="padding: 2px 6px; font-size: 0.85em;" data-i18n="piano_mode_midi">Waterfall</button>
+              <button id="btn-piano-mode-xml" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;" data-i18n="piano_mode_xml">Sheet</button>
+            </div>
+          </div>
+
+          <!-- MIDI Waterfall Canvas Viewport -->
+          <div id="piano-midi-section" class="piano-viewport-wrapper">
+            <canvas id="piano-midi-canvas" width="600" height="110" class="piano-canvas"></canvas>
+          </div>
+
+          <!-- MusicXML Score Viewport -->
+          <div id="piano-xml-section" class="piano-viewport-wrapper" style="display: none;">
+            <canvas id="piano-score-canvas" width="600" height="110" class="piano-canvas"></canvas>
+          </div>
+
+          <!-- Octave View Range Toolbar -->
+          <div class="studio-row" style="margin-top: 6px; padding: 4px 0;">
+            <div class="studio-row-label">
+              <label for="piano-range-select" class="studio-row-title" data-i18n="piano_view_range">Octave Range</label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <select id="piano-range-select" class="studio-select" style="padding: 2px 6px; font-size: 0.85em; width: 110px;">
+                <option value="auto" data-i18n="piano_range_auto" selected>Auto Fit</option>
+                <option value="bass" data-i18n="piano_range_bass">Bass (C2-C4)</option>
+                <option value="mid" data-i18n="piano_range_mid">Mid (C3-C5)</option>
+                <option value="treble" data-i18n="piano_range_treble">Treble (C4-C6)</option>
+                <option value="full" data-i18n="piano_range_full">Full 88-Key</option>
+              </select>
+              <button id="btn-octave-bass" class="studio-btn-ghost" style="padding: 2px 5px; font-size: 0.8em;">C2</button>
+              <button id="btn-octave-mid" class="studio-btn-ghost active" style="padding: 2px 5px; font-size: 0.8em;">C3</button>
+              <button id="btn-octave-treble" class="studio-btn-ghost" style="padding: 2px 5px; font-size: 0.8em;">C4</button>
+              <label style="display: flex; align-items: center; gap: 3px; font-size: 0.8em; color: #d1d5db; margin-left: 4px;">
+                <input type="checkbox" id="piano-autoscroll-check" checked style="accent-color: #e67e22; width: 11px; height: 11px;">
+                <span data-i18n="piano_autofollow">Follow</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Virtual Interactive 88-Key Piano Keyboard -->
+          <div class="piano-keyboard-wrapper" style="margin-top: 4px;">
+            <div class="piano-nav-strip">
+              <button id="btn-octave-left" class="studio-btn-ghost" style="padding: 1px 6px; font-size: 0.8em;" title="Shift View Left">◀</button>
+              <span id="piano-song-title" class="piano-song-banner" data-i18n="piano_no_song">🎵 No file loaded (Built-in Synthesizer Ready)</span>
+              <button id="btn-octave-right" class="studio-btn-ghost" style="padding: 1px 6px; font-size: 0.8em;" title="Shift View Right">▶</button>
+            </div>
+            <div id="piano-keyboard-container" class="piano-keys-scroll"></div>
+          </div>
+
+          <!-- Playback Controls & Transport Bar -->
+          <div class="piano-transport-bar" style="margin-top: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-piano-play" class="studio-btn-primary" style="padding: 4px 10px; font-size: 0.9em;" data-i18n="piano_btn_play">▶ Play</button>
+              <button id="btn-piano-stop" class="studio-btn-ghost" style="padding: 4px 8px; font-size: 0.9em;" data-i18n="piano_btn_stop">⏹ Stop</button>
+              <input type="range" id="piano-timeline" min="0" max="100" value="0" step="0.1" style="flex: 1; accent-color: #e67e22; height: 4px; cursor: pointer;">
+              <span id="val-piano-time" style="font-family: monospace; font-size: 0.82em; color: #f39c12; min-width: 70px; text-align: right;">0:00 / 0:00</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 0.85em;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label for="piano-tempo-slider" style="margin: 0; color: #d1d5db;"><span data-i18n="piano_tempo">Speed</span>:</label>
+                <div class="studio-number-wrapper">
+                  <input type="number" id="piano-tempo-slider" class="studio-number-input" min="0.25" max="3.0" step="0.1" value="1.0" style="width: 44px;">
+                  <span class="studio-unit-suffix">x</span>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label for="piano-vol-slider" style="margin: 0; color: #d1d5db;"><span data-i18n="piano_vol">Vol</span>:</label>
+                <div class="studio-number-wrapper">
+                  <input type="number" id="piano-vol-slider" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.85" style="width: 44px;">
+                  <span class="studio-unit-suffix">vol</span>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 3px;">
+                  <input type="checkbox" id="piano-sustain-check" style="accent-color: #e67e22; width: 11px; height: 11px;">
+                  <label for="piano-sustain-check" data-i18n="piano_sustain" style="margin: 0; font-size: 0.85em; cursor: pointer;">Sustain</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 3px;">
+                  <input type="checkbox" id="piano-loop-check" style="accent-color: #e67e22; width: 11px; height: 11px;">
+                  <label for="piano-loop-check" data-i18n="piano_loop" style="margin: 0; font-size: 0.85em; cursor: pointer;">Loop</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Piano Song Selection Grid -->
+          <div class="studio-card-header" style="margin-top: 10px;">
+            <span class="studio-card-title" data-i18n="piano_song_library">🎼 Song Library & Classical Scores</span>
+            <span id="piano-song-count" class="studio-badge studio-badge-amber">3 Scores</span>
+          </div>
+          <div id="piano-song-grid" class="studio-select-grid" style="max-height: 180px;"></div>
+
+          <!-- Compatibility hidden input & select -->
+          <select id="piano-preset-select" class="studio-select" style="display: none;">
+            <option value="" data-i18n="piano_select_preset">🎵 Select Preset Song...</option>
+            <option value="preset_fur_elise">Für Elise (Beethoven)</option>
+            <option value="preset_canon">Canon in D (Pachelbel)</option>
+            <option value="preset_twinkle">Twinkle Little Star (Mozart)</option>
+          </select>
+          <input type="file" id="piano-file-input" accept=".mid,.midi,.musicxml,.xml" style="display: none;">
+        </div>
+      </div>
+
+      <!-- Tab 6: System & Preferences (Centralized Configuration Hub) -->
+      <div id="tab-system" class="studio-tab-content">
+        <!-- 1. System & Localization Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title">⚙️ System & Localization</span>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="lang-select" class="studio-row-title" data-i18n="language">Language / 语言</label>
+            </div>
+            <select id="lang-select" class="studio-select" style="width: 170px;">
+              <option value="en">English</option>
+              <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+              <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+              <option value="ja">日本語 (Japanese)</option>
+              <option value="ko">한국어 (Korean)</option>
+              <option value="fr">Français (French)</option>
+              <option value="de">Deutsch (German)</option>
+              <option value="es">Español (Spanish - Spain)</option>
+              <option value="es-419">Español (Latinoamérica)</option>
+              <option value="it">Italiano (Italian)</option>
+              <option value="pt-BR">Português (Brasil)</option>
+              <option value="ru">Русский (Russian)</option>
+            </select>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="font-scale" class="studio-row-title" data-i18n="font_scale">Panel Text Size</label>
+              <span class="studio-row-sub">UI font scaling (0.4x–4.0x)</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="font-scale" class="studio-number-input" min="0.4" max="4.0" step="0.05" value="1.50">
+              <span class="studio-unit-suffix">x</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="win-width" class="studio-row-title" data-i18n="win_width">Window Width</label>
+              <span class="studio-row-sub">Display viewport span</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="win-width" class="studio-number-input" min="30" max="3840" step="10" value="350">
+              <span class="studio-unit-suffix">px</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="win-height" class="studio-row-title" data-i18n="win_height">Window Height</label>
+              <span class="studio-row-sub">Display viewport span</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="win-height" class="studio-number-input" min="30" max="2160" step="10" value="350">
+              <span class="studio-unit-suffix">px</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="model-scale" class="studio-row-title" data-i18n="model_scale">Model Scale</label>
+              <span class="studio-row-sub">3D mascot multiplier</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="model-scale" class="studio-number-input" min="0.1" max="5.0" step="0.05" value="1.00">
+              <span class="studio-unit-suffix">x</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="settings_left">Place Settings Icon on Left</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="settings-left">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Motion & GPU Performance Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="motion_section">🌀 Motion & GPU Performance</span>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="target-fps" class="studio-row-title" data-i18n="target_fps">Target Frame Rate</label>
+              <span class="studio-row-sub">Rendering refresh rate (15–240)</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="target-fps" class="studio-number-input" min="15" max="240" step="1" value="60">
+              <span class="studio-unit-suffix">FPS</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="idle_bobbing">Enable Idle Bobbing</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="model-bobbing" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="lock_position">Lock Mascot Position</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="lock-position">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="view_only">View Only Mode (Fades on Hover)</span>
+              <span class="studio-row-sub" data-i18n="view_only_sub">Toggle with Ctrl + V</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="view-only">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="dynamic_battery_saver">Dynamic Battery Saver</span>
+              <span class="studio-row-sub" data-i18n="dynamic_battery_saver_sub">Auto-throttles FPS when idle/unfocused</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="dynamic-battery-saver">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="idle_fps_saver">Idle Frame Rate Saver (30 FPS)</span>
+              <span class="studio-row-sub" data-i18n="idle_fps_saver_sub">Caps idle rendering</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="idle-fps-saver">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="gpu_optimize">Force High-Performance GPU</span>
+              <span class="studio-row-sub" data-i18n="gpu_sub">Requires Restart</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="gpu-optimize" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="gpu_low_power">Low-Power GPU Battery Saver</span>
+              <span class="studio-row-sub" data-i18n="gpu_low_power_sub">Requires Restart</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="gpu-low-power">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="mouse_optimize">Seamless Performance Mode</span>
+              <span class="studio-row-sub" data-i18n="mouse_sub">Throttled Proxy</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="mouse-optimize" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Axis Spinning Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="spin_controls">Axis Spinning</span>
+          </div>
+
+          <div class="studio-row">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label class="studio-switch">
+                <input type="checkbox" id="spin-x">
+                <span class="studio-slider-knob"></span>
+              </label>
+              <label for="speed-x" class="studio-row-title" data-i18n="axis_x">X Axis Spin</label>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="speed-x" class="studio-number-input" min="-5.0" max="5.0" step="0.1" value="1.0">
+              <span class="studio-unit-suffix">rad/s</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label class="studio-switch">
+                <input type="checkbox" id="spin-y">
+                <span class="studio-slider-knob"></span>
+              </label>
+              <label for="speed-y" class="studio-row-title" data-i18n="axis_y">Y Axis Spin</label>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="speed-y" class="studio-number-input" min="-5.0" max="5.0" step="0.1" value="1.0">
+              <span class="studio-unit-suffix">rad/s</span>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label class="studio-switch">
+                <input type="checkbox" id="spin-z">
+                <span class="studio-slider-knob"></span>
+              </label>
+              <label for="speed-z" class="studio-row-title" data-i18n="axis_z">Z Axis Spin</label>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="speed-z" class="studio-number-input" min="-5.0" max="5.0" step="0.1" value="1.0">
+              <span class="studio-unit-suffix">rad/s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Performance & Motion Monitor Card -->
+        <div class="studio-card" id="perf-monitor-section">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="perf_monitor_title">📊 Performance & Motion Monitor</span>
             <span id="perf-status-badge" class="perf-status-badge optimal">OPTIMAL 🟢</span>
           </div>
 
@@ -217,342 +948,103 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tab 3: Stage Lighting -->
-      <div id="tab-lighting" class="studio-tab-content">
-        <div class="settings-section">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
-            <h4 style="margin: 0;" data-i18n="spotlight_section">🔦 Multi-Source Stage Spotlight Control</h4>
-            <button id="add-spotlight-btn" class="btn"
-              style="padding: 4px 8px; font-size: 11px; cursor: pointer; background: rgba(230, 126, 34, 0.25); border: 1px solid rgba(230, 126, 34, 0.5); color: #f39c12;"
-              data-i18n="add_spotlight">➕ Add Spotlight Source</button>
+        <!-- 5. Physics Engine Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="physics_section">⚡ Physics & Collision Dynamics</span>
           </div>
 
-          <!-- 3D Asset & Stage Lighting Preview Viewport -->
-          <div id="settings-preview-container" class="settings-preview-container">
-            <div class="preview-header">
-              <span class="preview-title" data-i18n="preview_title">👁️ 3D Asset & Stage Lighting Preview</span>
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="enable_physics">Enable Physics Engine</span>
+              <span class="studio-row-sub">Newtonian momentum & drag throwing</span>
             </div>
-            <canvas id="settings-preview-canvas" class="settings-preview-canvas"></canvas>
-            <div class="preview-hud-controls">
-              <button id="preview-btn-zoom-in" class="btn preview-hud-btn" title="Zoom In (+)" data-i18n-title="preview_zoom_in">🔍➕</button>
-              <button id="preview-btn-zoom-out" class="btn preview-hud-btn" title="Zoom Out (-)" data-i18n-title="preview_zoom_out">🔍➖</button>
-              <button id="preview-btn-reset" class="btn preview-hud-btn" title="Reset Preview Camera" data-i18n-title="preview_reset_cam">🔄</button>
-              <button id="preview-btn-helpers" class="btn preview-hud-btn active" title="Toggle Spotlight Rays & Frustums" data-i18n-title="toggle_helpers">🔦</button>
-              <button id="preview-btn-front" class="btn preview-hud-btn" data-i18n="cam_front">Front</button>
-              <button id="preview-btn-top" class="btn preview-hud-btn" data-i18n="cam_top">Top</button>
-              <button id="preview-btn-iso" class="btn preview-hud-btn" data-i18n="cam_iso">Iso</button>
+            <label class="studio-switch">
+              <input type="checkbox" id="enable-physics">
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="physics_floor">Ground Landing Collider</span>
+              <span class="studio-row-sub">Prevents mascot falling below screen bottom</span>
             </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="physics-floor" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
           </div>
 
-          <div id="spotlight-cards-container"></div>
-
-          <div class="setting-item checkbox"
-            style="margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px;">
-            <input type="checkbox" id="enable-studio-lights" checked>
-            <label for="enable-studio-lights" data-i18n="enable_studio_lights">Enable General Studio Ambient
-              Lighting</label>
-          </div>
-          <div class="setting-item">
-            <label for="ambient-intensity"><span data-i18n="ambient_intensity">Master Ambient Light Brightness</span>:
-              <span id="val-ambient-intensity">0.70</span>x</label>
-            <input type="range" id="ambient-intensity" min="0.0" max="1.0" step="0.05" value="0.70">
-          </div>
-          <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;">
-            <button id="btn-dark-stage" class="btn"
-              style="flex: 1; background: #282828; border: 1px solid #3d3d3d; color: #e1e1e1; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer;"
-              data-i18n="dark_stage_preset">🎭 Set Dark Stage Mode</button>
-            <button id="btn-dual-concert" class="btn"
-              style="flex: 1; background: rgba(230, 126, 34, 0.25); border: 1px solid rgba(230, 126, 34, 0.5); color: #f39c12; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer;"
-              data-i18n="dual_concert_preset">🎸 Dual Concert Lights</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 4: Atmosphere & Visual FX -->
-      <div id="tab-atmosphere" class="studio-tab-content">
-        <div class="settings-section">
-          <h4 data-i18n="atmosphere_fx_title">🌸 Visual FX & Ambient Atmosphere</h4>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="sakura-rain" checked>
-            <label for="sakura-rain"><span data-i18n="sakura_rain">🌸 Sakura Petal Rain</span> <span
-                style="font-size: 10px; opacity: 0.7;" data-i18n="sakura_rain_sub">(Gently falling cherry blossoms)</span></label>
-          </div>
-          <div class="setting-item checkbox" style="margin-top: 6px;">
-            <input type="checkbox" id="snow-fall">
-            <label for="snow-fall"><span data-i18n="snow_fall">❄️ Gentle Snow Fall</span> <span
-                style="font-size: 10px; opacity: 0.7;" data-i18n="snow_fall_sub">(Glistening soft snowflakes)</span></label>
-          </div>
-          <div class="setting-hint-note"
-            style="font-size: 11px; background: rgba(255, 182, 193, 0.1); border: 1px solid rgba(255, 182, 193, 0.3); color: #ffb6c1; padding: 8px 12px; border-radius: 6px; margin-top: 10px; line-height: 1.5;">
-            🌸 <strong data-i18n="sakura_hint_title">Sakura Atmosphere</strong>: <span data-i18n="sakura_hint_body">Natural 3D tumbling petals with wind fluttering physics and dynamic lighting.</span>
-          </div>
-          <div class="setting-hint-note"
-            style="font-size: 11px; background: rgba(176, 224, 230, 0.1); border: 1px solid rgba(176, 224, 230, 0.3); color: #b0e0e6; padding: 8px 12px; border-radius: 6px; margin-top: 6px; line-height: 1.5;">
-            ❄️ <strong data-i18n="snow_hint_title">Winter Snow Atmosphere</strong>: <span data-i18n="snow_hint_body">Soft glistening 3D crystalline snowflakes with gentle breeze drift and illumination.</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: Sound & Procedural Audio FX -->
-      <div id="tab-sound" class="studio-tab-content">
-        <div class="settings-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h4 style="margin: 0;" data-i18n="sound_title">🎵 Audio & Ambient Synthesizer</h4>
-            <div class="setting-item checkbox" style="margin: 0; padding: 0;">
-              <input type="checkbox" id="sound-master-enable" checked>
-              <label for="sound-master-enable" data-i18n="sound_master_enable" style="margin-bottom: 0;">Master Audio</label>
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="physics-gravity" class="studio-row-title" data-i18n="physics_gravity">Gravity Acceleration</label>
+              <span class="studio-row-sub">Downward force multiplier</span>
+            </div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="physics-gravity" class="studio-number-input" min="0.0" max="25.0" step="0.5" value="9.8">
+              <span class="studio-unit-suffix">m/s²</span>
             </div>
           </div>
 
-          <div class="setting-item">
-            <label for="sound-master-vol"><span data-i18n="sound_master_vol">Master Audio Volume</span>: <span id="val-sound-master-vol">80%</span></label>
-            <input type="range" id="sound-master-vol" min="0.0" max="1.0" step="0.05" value="0.80">
-          </div>
-
-          <div class="sound-tracks-grid">
-            <!-- Track 1: Snow -->
-            <div class="sound-card" id="sound-card-snow">
-              <div class="sound-card-header">
-                <div class="sound-card-info">
-                  <span class="sound-card-icon">❄️</span>
-                  <div>
-                    <h5 data-i18n="sound_snow_title">Snow Atmosphere</h5>
-                    <p class="sound-card-desc" data-i18n="sound_snow_desc">Winter wind breeze & soft crystalline chimes</p>
-                  </div>
-                </div>
-                <button id="btn-sound-snow-play" class="btn sound-play-btn" data-i18n="sound_play">▶ Play</button>
-              </div>
-              <div class="sound-card-controls">
-                <div class="sound-vol-row">
-                  <label for="sound-snow-vol"><span data-i18n="sound_vol">Volume</span>: <span id="val-sound-snow-vol">70%</span></label>
-                  <input type="range" id="sound-snow-vol" min="0.0" max="1.0" step="0.05" value="0.70">
-                </div>
-                <div class="setting-item checkbox sound-sync-checkbox">
-                  <input type="checkbox" id="sound-snow-sync" checked>
-                  <label for="sound-snow-sync" data-i18n="sound_snow_sync">Auto-play with Snow Fall FX</label>
-                </div>
-              </div>
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="physics-elasticity" class="studio-row-title" data-i18n="physics_elasticity">Bounce Elasticity</label>
+              <span class="studio-row-sub">Restitution restitution coeff (0.0–1.0)</span>
             </div>
-
-            <!-- Track 2: Sakura -->
-            <div class="sound-card" id="sound-card-sakura">
-              <div class="sound-card-header">
-                <div class="sound-card-info">
-                  <span class="sound-card-icon">🌸</span>
-                  <div>
-                    <h5 data-i18n="sound_sakura_title">Sakura Spring Melody</h5>
-                    <p class="sound-card-desc" data-i18n="sound_sakura_desc">Japanese pentatonic koto arpeggios & spring breeze</p>
-                  </div>
-                </div>
-                <button id="btn-sound-sakura-play" class="btn sound-play-btn" data-i18n="sound_play">▶ Play</button>
-              </div>
-              <div class="sound-card-controls">
-                <div class="sound-vol-row">
-                  <label for="sound-sakura-vol"><span data-i18n="sound_vol">Volume</span>: <span id="val-sound-sakura-vol">70%</span></label>
-                  <input type="range" id="sound-sakura-vol" min="0.0" max="1.0" step="0.05" value="0.70">
-                </div>
-                <div class="setting-item checkbox sound-sync-checkbox">
-                  <input type="checkbox" id="sound-sakura-sync" checked>
-                  <label for="sound-sakura-sync" data-i18n="sound_sakura_sync">Auto-play with Sakura Rain FX</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Track 3: Drum Melody -->
-            <div class="sound-card" id="sound-card-drum">
-              <div class="sound-card-header">
-                <div class="sound-card-info">
-                  <span class="sound-card-icon">🥁</span>
-                  <div>
-                    <h5 data-i18n="sound_drum_title">Simple Drum Melody</h5>
-                    <p class="sound-card-desc" data-i18n="sound_drum_desc">Upbeat 16-step rhythmic drum groove & cheerful synth</p>
-                  </div>
-                </div>
-                <button id="btn-sound-drum-play" class="btn sound-play-btn" data-i18n="sound_play">▶ Play</button>
-              </div>
-              <div class="sound-card-controls">
-                <div class="sound-vol-row">
-                  <label for="sound-drum-vol"><span data-i18n="sound_vol">Volume</span>: <span id="val-sound-drum-vol">70%</span></label>
-                  <input type="range" id="sound-drum-vol" min="0.0" max="1.0" step="0.05" value="0.70">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Grand Piano & Sheet Music Studio (Plan 006) -->
-          <div class="piano-studio-container" style="margin-top: 14px; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h4 style="margin: 0;" data-i18n="piano_studio_title">🎹 Grand Piano & Sheet Music Studio</h4>
-              <span id="piano-song-title" class="piano-title-badge">🎹 Beethoven - Für Elise</span>
-            </div>
-
-            <!-- Specialized Mode Switcher -->
-            <div class="piano-mode-tabs" style="display: flex; gap: 6px; margin-bottom: 10px;">
-              <button id="btn-piano-mode-midi" class="btn piano-mode-btn active" style="flex: 1;" data-i18n="piano_mode_midi">🎹 MIDI Waterfall Roll</button>
-              <button id="btn-piano-mode-xml" class="btn piano-mode-btn" style="flex: 1;" data-i18n="piano_mode_xml">🎼 Dynamic Sheet Music (MusicXML)</button>
-            </div>
-
-            <!-- Viewport 1: MIDI Waterfall Canvas -->
-            <div id="piano-midi-section" class="piano-viewport-wrapper">
-              <canvas id="piano-midi-canvas" class="piano-canvas" width="620" height="150"></canvas>
-            </div>
-
-            <!-- Viewport 2: Dynamic MusicXML Sheet Music Canvas -->
-            <div id="piano-xml-section" class="piano-viewport-wrapper" style="display: none; height: 160px;">
-              <canvas id="piano-score-canvas" class="piano-canvas" width="620" height="160"></canvas>
-            </div>
-
-            <!-- Octave Navigation & Range Selector Toolbar -->
-            <div class="piano-octave-nav-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 10px; flex-wrap: wrap; gap: 6px;">
-              <div style="display: flex; gap: 4px; align-items: center;">
-                <label for="piano-range-select" style="margin: 0; color: #94a3b8; font-weight: 600;" data-i18n="piano_range_label">Range:</label>
-                <select id="piano-range-select" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 2px 6px; font-size: 10px;">
-                  <option value="88">🎹 88 Keys (Full Grand A0–C8)</option>
-                  <option value="autofit" selected>🎯 Auto-Fit Song Pitch</option>
-                  <option value="61">🎼 61 Keys (Standard C2–C7)</option>
-                  <option value="49">🎹 49 Keys (Studio C2–C6)</option>
-                  <option value="37">🎹 37 Keys (Compact C3–C6)</option>
-                </select>
-                <button id="btn-octave-bass" class="btn piano-octave-btn" data-i18n="piano_octave_bass">Bass</button>
-                <button id="btn-octave-mid" class="btn piano-octave-btn active" data-i18n="piano_octave_mid">Mid</button>
-                <button id="btn-octave-treble" class="btn piano-octave-btn" data-i18n="piano_octave_treble">Treble</button>
-              </div>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <div class="setting-item checkbox" style="margin: 0; padding: 0;">
-                  <input type="checkbox" id="piano-autoscroll-check" checked>
-                  <label for="piano-autoscroll-check" style="margin: 0; font-size: 10px; color: #94a3b8;" data-i18n="piano_autoscroll">Auto-Follow Notes</label>
-                </div>
-                <button id="btn-octave-left" class="btn piano-octave-arrow" title="Shift Octave Left" data-i18n-title="piano_shift_left">◀</button>
-                <button id="btn-octave-right" class="btn piano-octave-arrow" title="Shift Octave Right" data-i18n-title="piano_shift_right">▶</button>
-              </div>
-            </div>
-
-            <!-- Interactive Virtual Piano Keyboard (Extended 61-Key Span C2–C7) -->
-            <div id="piano-keyboard-container" class="piano-keyboard-wrapper"></div>
-            <div class="piano-shortcut-hint" style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 4px;" data-i18n="piano_shortcut_hint">
-              💡 Keyboard Shortcut: Keys A-K play C4–C5 notes, W E T Y U play sharps (♯)
-            </div>
-
-            <!-- Transport & Timeline Bar -->
-            <div class="piano-transport-bar" style="margin-top: 10px; background: rgba(18, 18, 24, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <button id="btn-piano-play" class="btn sound-play-btn" style="padding: 4px 10px;" data-i18n="piano_play">▶ Play</button>
-                <button id="btn-piano-stop" class="btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: 11px;" data-i18n="piano_stop">⏹ Stop</button>
-                <input type="range" id="piano-timeline" min="0" max="100" step="0.1" value="0" style="flex: 1;">
-                <span id="val-piano-time" style="font-family: monospace; font-size: 11px; color: #f39c12; min-width: 75px; text-align: right;">0:00 / 0:00</span>
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 11px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <label for="piano-preset-select" data-i18n="piano_presets" style="margin: 0; color: #94a3b8;">Preset:</label>
-                  <select id="piano-preset-select" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 2px 6px; font-size: 11px;">
-                    <option value="fur_elise">🎹 Beethoven - Für Elise (MIDI)</option>
-                    <option value="bach_minuet">🎹 Bach - Minuet in G (MIDI)</option>
-                  </select>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <label for="piano-tempo-slider" style="margin: 0; color: #94a3b8;"><span data-i18n="piano_speed">Speed</span>: <span id="val-piano-tempo" style="color: #f39c12;">1.00x</span></label>
-                  <input type="range" id="piano-tempo-slider" min="0.5" max="2.0" step="0.05" value="1.0" style="width: 70px;">
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <label for="piano-vol-slider" style="margin: 0; color: #94a3b8;"><span data-i18n="piano_vol">Vol</span>: <span id="val-piano-vol" style="color: #f39c12;">85%</span></label>
-                  <input type="range" id="piano-vol-slider" min="0.0" max="1.0" step="0.05" value="0.85" style="width: 60px;">
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div class="setting-item checkbox" style="margin: 0; padding: 0;">
-                    <input type="checkbox" id="piano-sustain-check">
-                    <label for="piano-sustain-check" data-i18n="piano_sustain" style="margin: 0; font-size: 10.5px;">Sustain</label>
-                  </div>
-                  <div class="setting-item checkbox" style="margin: 0; padding: 0;">
-                    <input type="checkbox" id="piano-loop-check">
-                    <label for="piano-loop-check" data-i18n="piano_loop" style="margin: 0; font-size: 10.5px;">Loop</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Drag & Drop Ingestion Dropzone -->
-            <div id="piano-dropzone" class="piano-dropzone" style="margin-top: 10px;">
-              <input type="file" id="piano-file-input" accept=".mid,.midi,.musicxml,.xml" style="display: none;">
-              <span style="font-size: 1.4em; margin-bottom: 2px;">📁</span>
-              <div style="font-size: 11px; font-weight: 600; color: #e2e8f0;" data-i18n="piano_dropzone_title">Drop .mid, .midi, or .musicxml file here</div>
-              <div style="font-size: 10px; color: #94a3b8;" data-i18n="piano_dropzone_sub">or <button id="btn-piano-browse" class="btn" style="padding: 1px 6px; font-size: 10px; background: rgba(243, 156, 18, 0.2); border: 1px solid rgba(243, 156, 18, 0.4); color: #f39c12; border-radius: 3px; cursor: pointer;" data-i18n="piano_browse">Browse Local Files</button></div>
+            <div class="studio-number-wrapper">
+              <input type="number" id="physics-elasticity" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.70">
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tab 5: Physics Engine -->
-      <div id="tab-physics" class="studio-tab-content">
-        <div class="settings-section">
-          <h4 data-i18n="physics_section">⚡ Physics & Collision Dynamics</h4>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="enable-physics">
-            <label for="enable-physics" data-i18n="enable_physics">Enable Physics Engine (Gravity & Throwing)</label>
+        <!-- 6. Camera & Spatial HUD Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="fps_mode_section">🎥 First-Person & Spatial HUD</span>
           </div>
-          <div class="physics-test-note"
-            style="font-size: 11px; background: #222222; border: 1px solid #3d3d3d; color: #f39c12; padding: 6px 10px; border-radius: 4px; margin: 6px 0 10px 0;">
-            💡 <strong data-i18n="physics_hint_title">Physics Throw Shortcut</strong>: <span
-              data-i18n="physics_hint_body">Hold <strong>D + Left Drag</strong> on mascot to throw with momentum!</span>
-          </div>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="physics-floor" checked>
-            <label for="physics-floor" data-i18n="physics_floor">Enable Ground Landing Collider</label>
-          </div>
-          <div class="spin-controls-grid">
-            <div class="spin-row">
-              <label for="physics-gravity" style="min-width: 100px;" data-i18n="physics_gravity">Gravity</label>
-              <input type="range" id="physics-gravity" min="0.0" max="25.0" step="0.5" value="9.8">
-              <span class="spin-val" id="val-physics-gravity">9.8</span>
-            </div>
-            <div class="spin-row">
-              <label for="physics-elasticity" style="min-width: 100px;" data-i18n="physics_elasticity">Bounce
-                Bounciness</label>
-              <input type="range" id="physics-elasticity" min="0.0" max="1.0" step="0.05" value="0.70">
-              <span class="spin-val" id="val-physics-elasticity">0.70</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Tab 5: Camera & Spatial HUD -->
-      <div id="tab-camera" class="studio-tab-content">
-        <div class="settings-section">
-          <h4 data-i18n="fps_mode_section">🎥 First-Person Perspective & Spatial Coordinates</h4>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="enable-fps-mode">
-            <label for="enable-fps-mode"><span data-i18n="enable_fps_mode">Enable First-Person Camera Mode</span> <span
-                style="font-size: 10px; opacity: 0.7;" data-i18n="fps_sub">(Toggle with Ctrl + Shift + F)</span></label>
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="enable_fps_mode">First-Person Camera Mode</span>
+              <span class="studio-row-sub" data-i18n="fps_sub">Toggle with Ctrl + Shift + F</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="enable-fps-mode">
+              <span class="studio-slider-knob"></span>
+            </label>
           </div>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="show-xyz-coords">
-            <label for="show-xyz-coords"><span data-i18n="show_xyz_coords">Enable Live Spatial XYZ Coordinates
-                HUD</span> <span style="font-size: 10px; opacity: 0.7;" data-i18n="show_xyz_sub">(Toggle with Ctrl +
-                Shift + C)</span></label>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="show_xyz_coords">Live Spatial XYZ HUD Overlay</span>
+              <span class="studio-row-sub" data-i18n="show_xyz_sub">Toggle with Ctrl + Shift + C</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="show-xyz-coords">
+              <span class="studio-slider-knob"></span>
+            </label>
           </div>
-          <div class="setting-item checkbox">
-            <input type="checkbox" id="show-ground-grid">
-            <label for="show-ground-grid" data-i18n="show_ground_grid">Show 3D Ground Spatial Reference Grid</label>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="show_ground_grid">3D Ground Reference Grid</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="show-ground-grid">
+              <span class="studio-slider-knob"></span>
+            </label>
           </div>
-          <div class="fps-hint-note"
-            style="font-size: 11px; background: #222222; border: 1px solid #3d3d3d; color: #f39c12; padding: 6px 10px; border-radius: 4px; margin-top: 6px;">
-            💡 <strong data-i18n="fps_hint_title">FPS Controls</strong>: <span data-i18n="fps_hint_body">Move mouse to
-              aim view (Cursor hidden + Crosshair active). WASD to move, Space (Up), Shift (Down). Press ESC to
-              exit!</span>
-          </div>
-          <button id="reset-camera-btn" class="btn"
-            style="margin-top: 8px; width: 100%; background: rgba(230, 126, 34, 0.25); border: 1px solid rgba(230, 126, 34, 0.5); color: #f39c12; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer;"
-            data-i18n="reset_camera">Reset Camera & Position 🔄</button>
+
+          <button id="reset-camera-btn" class="studio-btn-primary" style="margin-top: 8px; width: 100%;" data-i18n="reset_camera">Reset Camera & Position 🔄</button>
         </div>
 
-        <div class="settings-section help-section">
-          <h4 data-i18n="viewport_controls">🖱️ Viewport Controls (Blender Style)</h4>
+        <!-- 8. Viewport Controls Help Card -->
+        <div class="studio-card help-section">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="viewport_controls">🖱️ Viewport Controls (Blender Style)</span>
+          </div>
           <div class="help-grid">
             <div class="help-row">
               <span data-i18n="orbit">Orbit (Rotate)</span>
@@ -582,226 +1074,11 @@
         </div>
       </div>
 
-      <!-- Tab: Texture & Custom 3D Mesh -->
-      <div id="tab-texture" class="studio-tab-content">
-        <div class="settings-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h4 style="margin: 0;" data-i18n="texture_title">🎨 Custom Texture & Flag Cloth</h4>
-            <button id="texture-reset-btn" class="btn" style="padding: 3px 8px; font-size: 11px; cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);" data-i18n="texture_reset_btn">🔄 Reset</button>
-          </div>
-
-          <!-- Image Upload / Dropzone -->
-          <input type="file" id="texture-file-input" accept="image/*" style="display: none;">
-          <div id="texture-dropzone" class="texture-dropzone">
-            <span class="texture-dropzone-icon">🖼️</span>
-            <strong style="font-size: 12px; margin-bottom: 4px;" data-i18n="texture_drop_title">Upload Custom Texture Image</strong>
-            <span style="font-size: 10px; color: #94a3b8; margin-bottom: 8px;" data-i18n="texture_drop_sub">Drag & drop PNG, JPG, WebP or SVG here</span>
-            <button id="texture-browse-btn" class="btn" style="padding: 5px 14px; font-size: 11px; font-weight: 600; background: rgba(243, 156, 18, 0.25); border: 1px solid rgba(243, 156, 18, 0.5); color: #f39c12; cursor: pointer;" data-i18n="texture_browse_btn">📁 Choose Image</button>
-          </div>
-
-          <!-- Active Texture Preview Container -->
-          <div class="texture-preview-container">
-            <img id="texture-preview-img" class="texture-preview-thumbnail" alt="Texture Preview" src="">
-            <div class="texture-info">
-              <div id="texture-filename" class="texture-info-title">Preset: default</div>
-              <div class="texture-info-sub" data-i18n="texture_active_applied">Active Texture Applied to Mesh</div>
-            </div>
-          </div>
-
-          <!-- Preset Flag Buttons -->
-          <label style="margin-top: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 600; display: block;" data-i18n="texture_presets_title">🏳️ Preset Flag Styles</label>
-          <div class="flag-presets-grid">
-            <button class="flag-preset-btn" data-preset="default">🦁 <span data-i18n="preset_default">Royal Tricolor</span></button>
-            <button class="flag-preset-btn" data-preset="world">🌐 <span data-i18n="preset_world">World Globe</span></button>
-            <button class="flag-preset-btn" data-preset="cyber">⚡ <span data-i18n="preset_cyber">Cyber Neon</span></button>
-            <button class="flag-preset-btn" data-preset="star">⭐ <span data-i18n="preset_star">Royal Star</span></button>
-            <button class="flag-preset-btn" data-preset="rainbow">🌈 <span data-i18n="preset_rainbow">Pride Rainbow</span></button>
-          </div>
-
-          <!-- Real-Time Cloth Wave & Wind Sliders -->
-          <div class="settings-section" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
-            <h5 style="margin: 0 0 8px 0; font-size: 11.5px;" data-i18n="flag_wind_title">💨 Flag Wind Wave Physics</h5>
-            <div class="setting-item">
-              <label for="flag-wind-speed"><span data-i18n="flag_wind_speed">Wind Speed</span>: <span id="val-flag-wind-speed">3.5</span>x</label>
-              <input type="range" id="flag-wind-speed" min="0.5" max="10.0" step="0.5" value="3.5">
-            </div>
-            <div class="setting-item">
-              <label for="flag-wave-intensity"><span data-i18n="flag_wave_intensity">Wave Amplitude</span>: <span id="val-flag-wave-intensity">0.35</span>x</label>
-              <input type="range" id="flag-wave-intensity" min="0.05" max="1.50" step="0.05" value="0.35">
-            </div>
-          </div>
-
-          <!-- Texture Mapping & Shader Controls -->
-          <div class="settings-section" style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
-            <h5 style="margin: 0 0 8px 0; font-size: 11.5px;" data-i18n="texture_mapping_title">📐 Mapping & Surface Shaders</h5>
-            <div class="setting-item">
-              <label for="texture-repeat-x"><span data-i18n="texture_repeat_x">Texture Repeat X</span>: <span id="val-texture-repeat-x">1.0</span>x</label>
-              <input type="range" id="texture-repeat-x" min="1.0" max="6.0" step="0.5" value="1.0">
-            </div>
-            <div class="setting-item">
-              <label for="texture-repeat-y"><span data-i18n="texture_repeat_y">Texture Repeat Y</span>: <span id="val-texture-repeat-y">1.0</span>x</label>
-              <input type="range" id="texture-repeat-y" min="1.0" max="6.0" step="0.5" value="1.0">
-            </div>
-            <div class="setting-item">
-              <label for="texture-roughness"><span data-i18n="texture_roughness">Surface Roughness</span>: <span id="val-texture-roughness">0.50</span></label>
-              <input type="range" id="texture-roughness" min="0.0" max="1.0" step="0.05" value="0.50">
-            </div>
-            <div class="setting-item">
-              <label for="texture-metalness"><span data-i18n="texture_metalness">Surface Metalness</span>: <span id="val-texture-metalness">0.05</span></label>
-              <input type="range" id="texture-metalness" min="0.0" max="1.0" step="0.05" value="0.05">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 6: System & Locales -->
-      <div id="tab-system" class="studio-tab-content">
-        <div class="setting-item">
-          <label for="lang-select" data-i18n="language">Language / 语言</label>
-          <select id="lang-select">
-            <option value="en">English</option>
-            <option value="zh-CN">简体中文 (Simplified Chinese)</option>
-            <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
-            <option value="ja">日本語 (Japanese)</option>
-            <option value="ko">한국어 (Korean)</option>
-            <option value="fr">Français (French)</option>
-            <option value="de">Deutsch (German)</option>
-            <option value="es">Español (Spanish - Spain)</option>
-            <option value="es-419">Español (Latinoamérica)</option>
-            <option value="it">Italiano (Italian)</option>
-            <option value="pt-BR">Português (Brasil)</option>
-            <option value="ru">Русский (Russian)</option>
-          </select>
-        </div>
-
-        <div class="setting-item">
-          <label for="font-scale"><span data-i18n="font_scale">Panel Text Size</span>: <span
-              id="val-font-scale">1.50</span>x</label>
-          <input type="range" id="font-scale" min="0.8" max="2.0" step="0.05" value="1.50">
-        </div>
-
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="settings-left">
-          <label for="settings-left" data-i18n="settings_left">Place Settings Icon on Left</label>
-        </div>
-      </div>
-
-      <!-- Tab 10: AI Function Director -->
-      <div id="tab-ai" class="studio-tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h4 style="margin: 0; font-size: 1.05em;" data-i18n="ai_tab_title">🤖 Local LLM AI Function Director</h4>
-          <div style="display: flex; gap: 4px;">
-            <button id="btn-ai-toggle-batch" class="btn" style="padding: 3px 8px; font-size: 0.85em; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.4); color: #c084fc; cursor: pointer;" data-i18n="ai_btn_batch_test">🧪 Auto Test</button>
-            <button id="btn-ai-toggle-config" class="btn" style="padding: 3px 8px; font-size: 0.85em; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; cursor: pointer;" data-i18n="ai_config">⚙️ LLM Config</button>
-          </div>
-        </div>
-
-        <div class="setting-item checkbox" style="margin-bottom: 6px;">
-          <input type="checkbox" id="ai-director-enable" checked>
-          <label for="ai-director-enable" data-i18n="ai_enable_toggle">Enable AI Function Directing</label>
-        </div>
-
-        <div class="setting-item checkbox" style="margin-bottom: 8px;">
-          <input type="checkbox" id="ai-context-retrieval-enable" checked>
-          <label for="ai-context-retrieval-enable" data-i18n="ai_context_retrieval_toggle">🧠 Enable App Knowledge & Context Augmentation (RAG)</label>
-        </div>
-
-        <!-- Collapsible Batch Prompt Test Runner Panel -->
-        <div id="ai-batch-test-panel" style="display: none; background: rgba(18, 14, 28, 0.85); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-size: 0.85em; font-weight: 600; color: #d8b4fe;" data-i18n="ai_batch_title">🧪 Automated Batch Prompt Runner</span>
-            <span style="font-size: 0.75em; color: #a855f7;">Delimiter: <code>//test//</code></span>
-          </div>
-          <textarea id="ai-batch-prompts-input" placeholder="Enter prompts separated by //test//..." style="width: 100%; height: 95px; background: #0c0a14; border: 1px solid #3b2a59; border-radius: 4px; color: #e9d5ff; font-family: monospace; font-size: 0.82em; padding: 6px; resize: vertical; box-sizing: border-box; line-height: 1.4;"></textarea>
-          <div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button id="btn-ai-run-batch-test" class="btn" style="flex: 1; padding: 5px 8px; font-size: 0.85em; font-weight: 600; background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%); color: #fff; border: none; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_run_batch">▶ Run 10 Batch Prompts</button>
-            <button id="btn-ai-reset-batch-prompts" class="btn" style="padding: 5px 8px; font-size: 0.85em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 4px; cursor: pointer;" title="Reset Default 10 Prompts" data-i18n="ai_btn_reset_batch">🔄 10 Presets</button>
-          </div>
-          <div id="ai-batch-progress-bar" style="display: none; margin-top: 6px; font-size: 0.8em; color: #34d399; font-weight: 600; padding: 4px 6px; background: rgba(16,185,129,0.1); border-radius: 4px; border: 1px solid rgba(16,185,129,0.25);"></div>
-        </div>
-
-        <!-- Collapsible Endpoint Config Section -->
-        <div id="ai-settings-panel" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;">
-          <!-- Live Connection Status Banner -->
-          <div id="ai-connection-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8em; padding: 5px 8px; border-radius: 4px; margin-bottom: 8px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;">
-            <span id="ai-status-text">⚡ Status: Local Ollama offline. Operating in fallback mode.</span>
-            <button id="btn-ai-ping-endpoint" class="btn" style="padding: 2px 6px; font-size: 0.85em; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer;">🔄 Check</button>
-          </div>
-
-          <div class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-provider-select" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_provider">Provider Preset:</label>
-            <select id="ai-provider-select" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 3px 6px; font-size: 0.9em;">
-              <option value="ollama" selected>Ollama Local (localhost:11434 - llama3.2)</option>
-              <option value="lmstudio">LM Studio Local (localhost:1234)</option>
-              <option value="groq">Groq Cloud (Fast Free - Llama-3.3-70B)</option>
-              <option value="openrouter">OpenRouter Cloud (Free Tier Models)</option>
-              <option value="deepseek">DeepSeek API (deepseek-chat)</option>
-              <option value="openai">OpenAI (gpt-4o-mini)</option>
-              <option value="custom">Custom OpenAI Endpoint</option>
-            </select>
-          </div>
-          <div class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-endpoint-url" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_endpoint">Endpoint URL:</label>
-            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
-          </div>
-          <div class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-model-name" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_model">Model Name:</label>
-            <input type="text" id="ai-model-name" value="llama3.2" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
-          </div>
-          <div id="ai-api-key-container" class="setting-item" style="margin-bottom: 6px;">
-            <label for="ai-api-key" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_api_key">API Key (Optional for Local, Required for Cloud):</label>
-            <input type="password" id="ai-api-key" placeholder="Enter API key (gsk_..., sk-or-..., etc.)" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
-          </div>
-          <div class="setting-item" style="margin-bottom: 0;">
-            <label for="ai-retriever-preset" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_retriever_preset">Knowledge Retriever Engine:</label>
-            <select id="ai-retriever-preset" style="background: #25252b; border: 1px solid #3c3c45; color: #e2e8f0; border-radius: 4px; padding: 3px 6px; font-size: 0.9em;">
-              <option value="builtin_rag" selected>Built-in App Knowledge Base + Live Telemetry (RAG)</option>
-              <option value="deep_inspection">Deep Subsystem Telemetry (Full Architecture Spec)</option>
-              <option value="custom_endpoint">Dual-Agent / Secondary AI Endpoint</option>
-            </select>
-          </div>
-          <div id="ai-custom-retriever-box" style="display: none; margin-top: 6px;">
-            <label for="ai-retriever-endpoint" style="font-size: 0.85em; color: #94a3b8;" data-i18n="ai_retriever_endpoint">Secondary Context AI Endpoint:</label>
-            <input type="text" id="ai-retriever-endpoint" value="http://localhost:11434/v1" style="background: #18181c; border: 1px solid #33333e; color: #fff; border-radius: 4px; padding: 4px 6px; font-size: 0.9em; width: 100%;">
-          </div>
-        </div>
-
-        <!-- Chat Conversation Messages Window -->
-        <div id="ai-chat-messages" class="ai-chat-container">
-          <div class="ai-msg-bubble ai-msg-bot">
-            <span class="ai-msg-avatar">🤖</span>
-            <div class="ai-msg-body">
-              <div class="ai-msg-text" data-i18n="ai_welcome_msg">
-                Hello! I am your AI Function Director. Tell me what you'd like to adjust (scale, rotation, physics, sakura rain, model, or camera) and I'll execute it for you!
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Chat Input Field and Send Bar -->
-        <div class="ai-input-bar" style="display: flex; gap: 6px; margin-top: 6px;">
-          <input type="text" id="ai-chat-input" placeholder="Tell AI what to do (e.g. 'scale to 1.8x and spin')..." data-i18n-placeholder="ai_input_placeholder" style="flex: 1; background: #1a1a20; border: 1px solid #3a3a46; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 0.95em;">
-          <button id="btn-ai-send" class="btn" style="padding: 6px 14px; font-size: 0.9em; font-weight: 600; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer;" data-i18n="ai_send">Send</button>
-          <button id="btn-ai-clear" class="btn" title="Clear Chat" style="padding: 6px 10px; font-size: 0.9em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 6px; cursor: pointer;">🧹</button>
-        </div>
-
-        <!-- AI Diagnostic Log Report Actions -->
-        <div style="display: flex; gap: 6px; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
-          <button id="btn-ai-copy-report" class="btn" style="flex: 1; padding: 5px 8px; font-size: 0.85em; font-weight: 600; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_copy_report">📋 Copy Diagnostic Report</button>
-          <button id="btn-ai-toggle-report" class="btn" style="padding: 5px 8px; font-size: 0.85em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 4px; cursor: pointer;" data-i18n="ai_btn_view_report">🔍 View Log</button>
-        </div>
-
-        <!-- Live Diagnostic Report Viewer Box -->
-        <div id="ai-report-viewer-box" style="display: none; margin-top: 6px;">
-          <textarea id="ai-report-viewer" readonly style="width: 100%; height: 120px; background: #0c0d12; border: 1px solid #282a36; border-radius: 4px; color: #a5b4fc; font-family: monospace; font-size: 0.8em; padding: 6px; resize: vertical;"></textarea>
-        </div>
-      </div>
-
     </div>
 
     <!-- Fixed Footer Action Buttons -->
     <div style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px; flex-shrink: 0;">
-      <button id="save-btn" class="btn" style="width: 100%; font-size: 1.05em; padding: 8px;" data-i18n="save_btn">Save & Refresh</button>
+      <button id="save-btn" class="studio-btn-primary" style="width: 100%; font-size: 1.05em; padding: 8px;" data-i18n="save_btn">Save & Refresh</button>
     </div>
   </div>
   <!-- Live XYZ Spatial Coordinates HUD Overlay -->

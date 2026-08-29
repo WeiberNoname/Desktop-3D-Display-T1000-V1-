@@ -150,22 +150,75 @@ export function setupTextureTabUI(deps) {
     });
   }
 
-  // --- Flag Presets ---
-  presetButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const preset = btn.getAttribute('data-preset') || 'default';
-      const presetUrl = createPresetFlagTexture(preset);
-      currentSettings.customTexturePath = '';
-      currentSettings.flagPreset = preset;
+  // --- Unified Flag & Texture Card Selection Grid ---
+  const textureGrid = document.getElementById('texture-select-grid');
+  const countBadge = document.getElementById('texture-count-badge');
+  const registry = window.__assetRegistryManager || (typeof AssetRegistryManager !== 'undefined' ? AssetRegistryManager.getInstance() : null);
 
-      if (previewImg) previewImg.src = presetUrl;
-      if (filenameLabel) filenameLabel.innerText = `Preset: ${preset}`;
+  const builtInPresets = [
+    { id: 'default', name: t('preset_default', 'Royal Tricolor'), icon: '🦁', type: 'preset' },
+    { id: 'world', name: t('preset_world', 'World Globe'), icon: '🌐', type: 'preset' },
+    { id: 'cyber', name: t('preset_cyber', 'Cyber Neon'), icon: '⚡', type: 'preset' },
+    { id: 'star', name: t('preset_star', 'Royal Star'), icon: '⭐', type: 'preset' },
+    { id: 'rainbow', name: t('preset_rainbow', 'Pride Rainbow'), icon: '🌈', type: 'preset' }
+  ];
 
-      applyTextureToActiveMesh(presetUrl);
-      if (saveSettingsFile) saveSettingsFile();
-      if (forceRefreshAllPreviews) forceRefreshAllPreviews();
+  const renderTextureGrid = () => {
+    if (!textureGrid) return;
+    textureGrid.innerHTML = '';
+
+    const customAssets = registry ? registry.getAssets('texture') : [];
+    const allItems = [...builtInPresets, ...customAssets];
+
+    if (countBadge) {
+      countBadge.textContent = `${allItems.length} Styles`;
+    }
+
+    allItems.forEach(item => {
+      const card = document.createElement('div');
+      const isPreset = item.type === 'preset';
+      const texUrl = isPreset ? createPresetFlagTexture(item.id) : item.objectUrl;
+      const isSelected = isPreset ? (currentSettings.flagPreset === item.id && !currentSettings.customTexturePath) : (currentSettings.customTexturePath === item.objectUrl);
+
+      card.className = `studio-select-card ${isSelected ? 'selected' : ''}`;
+      card.setAttribute('data-id', item.id);
+
+      card.innerHTML = `
+        <div class="studio-select-thumb">
+          <img src="${texUrl}" class="asset-thumbnail-img" alt="${item.name}">
+        </div>
+        <div class="studio-select-label" title="${item.name}">${isPreset ? item.icon + ' ' + item.name : item.name}</div>
+        <div class="studio-select-sub">${isPreset ? 'Built-in Flag' : 'Imported • ' + item.sizeFormatted}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        document.querySelectorAll('#texture-select-grid .studio-select-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        if (isPreset) {
+          currentSettings.customTexturePath = '';
+          currentSettings.flagPreset = item.id;
+          if (filenameLabel) filenameLabel.innerText = `Preset: ${item.id}`;
+        } else {
+          currentSettings.customTexturePath = item.objectUrl;
+          currentSettings.flagPreset = 'custom';
+          if (filenameLabel) filenameLabel.innerText = item.name;
+        }
+
+        if (previewImg) previewImg.src = texUrl;
+        applyTextureToActiveMesh(texUrl);
+        if (saveSettingsFile) saveSettingsFile();
+        if (forceRefreshAllPreviews) forceRefreshAllPreviews();
+      });
+
+      textureGrid.appendChild(card);
     });
-  });
+  };
+
+  if (registry) {
+    registry.subscribe(() => renderTextureGrid());
+  }
+  renderTextureGrid();
 
   // --- Reset Button ---
   if (resetBtn) {

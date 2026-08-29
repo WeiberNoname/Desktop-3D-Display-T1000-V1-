@@ -1,6 +1,7 @@
 /**
- * Spotlight Cards UI Component (<190 lines)
- * Renders spotlight configuration cards, sliders, color picker, and RGB inputs.
+ * Spotlight Cards UI Component
+ * Renders spotlight configuration cards with unified Studio Primitives:
+ * .studio-card, .studio-row, .studio-number-wrapper, .studio-switch, .studio-select
  */
 
 export function hexToRgb(hex) {
@@ -40,68 +41,90 @@ export function renderSpotlightCardsUI({ currentSettings, addSpotlightBtn, updat
 
   currentSettings.spotlights.forEach((spotConfig, idx) => {
     const card = document.createElement('div');
-    card.className = 'spotlight-card';
-    card.style.cssText = 'background: #252525; border: 1px solid #383838; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px;';
+    card.className = 'studio-card spotlight-card';
+    card.style.marginTop = '8px';
     const lightNum = idx + 1;
 
     card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <div class="studio-card-header">
+        <span class="studio-card-title">💡 Light #${lightNum}</span>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="spot-enable-${idx}" ${spotConfig.enabled ? 'checked' : ''}>
-          <label for="spot-enable-${idx}" style="font-weight: 600; font-size: 12px; margin: 0;">💡 Light #${lightNum}</label>
+          <label class="studio-switch" title="Toggle Light">
+            <input type="checkbox" id="spot-enable-${idx}" ${spotConfig.enabled ? 'checked' : ''}>
+            <span class="studio-slider-knob"></span>
+          </label>
+          ${currentSettings.spotlights.length > 1 ? `<button id="spot-remove-${idx}" class="studio-btn-danger" style="padding: 2px 8px; font-size: 0.8em;">🗑️ Remove</button>` : ''}
         </div>
-        ${currentSettings.spotlights.length > 1 ? `<button id="spot-remove-${idx}" class="btn close" style="padding: 2px 6px; font-size: 10px; cursor: pointer; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171;">🗑️ Remove</button>` : ''}
       </div>
-      <div class="setting-item">
-        <label for="spot-h-${idx}"><span>${t('spotlight_angle_h')}</span>: <span id="val-spot-h-${idx}">${spotConfig.angleH}</span>°</label>
-        <input type="range" id="spot-h-${idx}" min="-180" max="180" step="1" value="${spotConfig.angleH}">
-      </div>
-      <div class="setting-item">
-        <label for="spot-v-${idx}"><span>${t('spotlight_angle_v')}</span>: <span id="val-spot-v-${idx}">${spotConfig.angleV}</span>°</label>
-        <input type="range" id="spot-v-${idx}" min="0" max="90" step="1" value="${spotConfig.angleV}">
-      </div>
-      <div class="setting-item">
-        <label for="spot-cone-${idx}"><span>${t('spotlight_cone')}</span>: <span id="val-spot-cone-${idx}">${spotConfig.cone}</span>°</label>
-        <input type="range" id="spot-cone-${idx}" min="10" max="80" step="1" value="${spotConfig.cone}">
-      </div>
-      <div class="setting-item">
-        <label for="spot-int-${idx}"><span>${t('spotlight_intensity')}</span>: <span id="val-spot-int-${idx}">${parseFloat(spotConfig.intensity).toFixed(2)}</span>x</label>
-        <input type="range" id="spot-int-${idx}" min="0.0" max="5.0" step="0.1" value="${spotConfig.intensity}">
-      </div>
-      <div class="setting-item" style="flex-direction: column; align-items: stretch; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <label style="margin: 0; font-weight: 600; font-size: 11px;">${t('spotlight_color') || 'Spotlight Color'}</label>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <input type="color" id="spot-color-picker-${idx}" value="${spotConfig.color || '#ffffff'}" style="width: 26px; height: 22px; padding: 0; border: 1px solid #555; border-radius: 4px; cursor: pointer; background: none;">
-            <input type="text" id="spot-hex-text-${idx}" value="${(spotConfig.color || '#ffffff').toUpperCase()}" maxlength="7" style="width: 65px; font-family: monospace; font-size: 11px; padding: 2px 4px; text-transform: uppercase; background: #1a1a1a; border: 1px solid #444; color: #f39c12; border-radius: 3px; text-align: center;">
-          </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-h-${idx}" class="studio-row-title">${t('spotlight_angle_h')}</label>
+          <span class="studio-row-sub">Azimuth angle (-180° to 180°)</span>
         </div>
-        <div style="display: flex; gap: 4px; margin-top: 2px;">
-          <div style="flex: 1; display: flex; align-items: center; gap: 2px; background: rgba(239, 68, 68, 0.15); padding: 2px 4px; border-radius: 3px; border: 1px solid rgba(239, 68, 68, 0.3);">
-            <span style="font-size: 10px; font-weight: bold; color: #f87171;">R</span>
-            <input type="number" id="spot-rgb-r-${idx}" min="0" max="255" value="${hexToRgb(spotConfig.color || '#ffffff').r}" style="width: 100%; font-size: 10px; padding: 1px 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(239,68,68,0.4); color: #fff; border-radius: 2px; font-family: monospace;">
-          </div>
-          <div style="flex: 1; display: flex; align-items: center; gap: 2px; background: rgba(34, 197, 94, 0.15); padding: 2px 4px; border-radius: 3px; border: 1px solid rgba(34, 197, 94, 0.3);">
-            <span style="font-size: 10px; font-weight: bold; color: #4ade80;">G</span>
-            <input type="number" id="spot-rgb-g-${idx}" min="0" max="255" value="${hexToRgb(spotConfig.color || '#ffffff').g}" style="width: 100%; font-size: 10px; padding: 1px 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(34,197,94,0.4); color: #fff; border-radius: 2px; font-family: monospace;">
-          </div>
-          <div style="flex: 1; display: flex; align-items: center; gap: 2px; background: rgba(59, 130, 246, 0.15); padding: 2px 4px; border-radius: 3px; border: 1px solid rgba(59, 130, 246, 0.3);">
-            <span style="font-size: 10px; font-weight: bold; color: #60a5fa;">B</span>
-            <input type="number" id="spot-rgb-b-${idx}" min="0" max="255" value="${hexToRgb(spotConfig.color || '#ffffff').b}" style="width: 100%; font-size: 10px; padding: 1px 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(59,130,246,0.4); color: #fff; border-radius: 2px; font-family: monospace;">
-          </div>
+        <div class="studio-number-wrapper">
+          <input type="number" id="spot-h-${idx}" class="studio-number-input" min="-180" max="180" step="1" value="${spotConfig.angleH}">
+          <span class="studio-unit-suffix">°</span>
         </div>
-        <div style="margin-top: 3px;">
-          <select id="spot-color-${idx}" style="width: 100%; font-size: 10px; padding: 2px 4px; background: #1a1a1a; border: 1px solid #3d3d3d; color: #bbb; border-radius: 3px;">
-            <option value="" disabled selected>-- Quick Presets --</option>
-            <option value="#ffffff">Pure White (255, 255, 255)</option>
-            <option value="#ffb703">Concert Warm Gold (255, 183, 3)</option>
-            <option value="#00f0ff">Cyberpunk Neon Cyan (0, 240, 255)</option>
-            <option value="#ff007f">Stage Pink (255, 0, 127)</option>
-            <option value="#ff0000">Laser Red (255, 0, 0)</option>
-            <option value="#a855f7">Vibrant Purple (168, 85, 247)</option>
-            <option value="#22c55e">Emerald Stage Green (34, 197, 94)</option>
-          </select>
+      </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-v-${idx}" class="studio-row-title">${t('spotlight_angle_v')}</label>
+          <span class="studio-row-sub">Elevation angle (0° to 90°)</span>
         </div>
+        <div class="studio-number-wrapper">
+          <input type="number" id="spot-v-${idx}" class="studio-number-input" min="0" max="90" step="1" value="${spotConfig.angleV}">
+          <span class="studio-unit-suffix">°</span>
+        </div>
+      </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-cone-${idx}" class="studio-row-title">${t('spotlight_cone')}</label>
+          <span class="studio-row-sub">Beam spread cone (10° to 80°)</span>
+        </div>
+        <div class="studio-number-wrapper">
+          <input type="number" id="spot-cone-${idx}" class="studio-number-input" min="10" max="80" step="1" value="${spotConfig.cone}">
+          <span class="studio-unit-suffix">°</span>
+        </div>
+      </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-int-${idx}" class="studio-row-title">${t('spotlight_intensity')}</label>
+          <span class="studio-row-sub">Luminosity multiplier</span>
+        </div>
+        <div class="studio-number-wrapper">
+          <input type="number" id="spot-int-${idx}" class="studio-number-input" min="0.0" max="10.0" step="0.1" value="${parseFloat(spotConfig.intensity).toFixed(1)}">
+          <span class="studio-unit-suffix">x</span>
+        </div>
+      </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-color-picker-${idx}" class="studio-row-title">${t('spotlight_color') || 'Spotlight Color'}</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="color" id="spot-color-picker-${idx}" value="${spotConfig.color || '#ffffff'}" style="width: 28px; height: 24px; padding: 0; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer; background: none;">
+          <input type="text" id="spot-hex-text-${idx}" value="${(spotConfig.color || '#ffffff').toUpperCase()}" maxlength="7" style="width: 68px; font-family: monospace; font-size: 0.85em; padding: 3px 6px; text-transform: uppercase; background: #14151e; border: 1px solid rgba(255,255,255,0.12); color: #38bdf8; border-radius: 4px; text-align: center;">
+        </div>
+      </div>
+
+      <div class="studio-row">
+        <div class="studio-row-label">
+          <label for="spot-color-${idx}" class="studio-row-title">Color Preset</label>
+        </div>
+        <select id="spot-color-${idx}" class="studio-select" style="width: 160px;">
+          <option value="" disabled selected>-- Presets --</option>
+          <option value="#ffffff">Pure White</option>
+          <option value="#ffb703">Concert Warm Gold</option>
+          <option value="#00f0ff">Cyberpunk Neon Cyan</option>
+          <option value="#ff007f">Stage Pink</option>
+          <option value="#ff0000">Laser Red</option>
+          <option value="#a855f7">Vibrant Purple</option>
+          <option value="#22c55e">Emerald Stage Green</option>
+        </select>
       </div>
     `;
 
@@ -112,49 +135,84 @@ export function renderSpotlightCardsUI({ currentSettings, addSpotlightBtn, updat
 
 function bindSpotlightCardListeners(card, spotConfig, idx, deps) {
   const enableCb = card.querySelector(`#spot-enable-${idx}`);
-  const hSlider = card.querySelector(`#spot-h-${idx}`);
-  const vSlider = card.querySelector(`#spot-v-${idx}`);
-  const coneSlider = card.querySelector(`#spot-cone-${idx}`);
-  const intSlider = card.querySelector(`#spot-int-${idx}`);
+  const hInput = card.querySelector(`#spot-h-${idx}`);
+  const vInput = card.querySelector(`#spot-v-${idx}`);
+  const coneInput = card.querySelector(`#spot-cone-${idx}`);
+  const intInput = card.querySelector(`#spot-int-${idx}`);
   const colorPicker = card.querySelector(`#spot-color-picker-${idx}`);
   const hexText = card.querySelector(`#spot-hex-text-${idx}`);
-  const inputR = card.querySelector(`#spot-rgb-r-${idx}`);
-  const inputG = card.querySelector(`#spot-rgb-g-${idx}`);
-  const inputB = card.querySelector(`#spot-rgb-b-${idx}`);
   const colorSelect = card.querySelector(`#spot-color-${idx}`);
   const removeBtn = card.querySelector(`#spot-remove-${idx}`);
 
-  if (enableCb) enableCb.addEventListener('change', () => { spotConfig.enabled = enableCb.checked; deps.updateSpotlightPosition(); });
-  if (hSlider) hSlider.addEventListener('input', () => { spotConfig.angleH = parseInt(hSlider.value, 10); card.querySelector(`#val-spot-h-${idx}`).innerText = hSlider.value; deps.updateSpotlightPosition(); });
-  if (vSlider) vSlider.addEventListener('input', () => { spotConfig.angleV = parseInt(vSlider.value, 10); card.querySelector(`#val-spot-v-${idx}`).innerText = vSlider.value; deps.updateSpotlightPosition(); });
-  if (coneSlider) coneSlider.addEventListener('input', () => { spotConfig.cone = parseInt(coneSlider.value, 10); card.querySelector(`#val-spot-cone-${idx}`).innerText = coneSlider.value; deps.updateSpotlightPosition(); });
-  if (intSlider) intSlider.addEventListener('input', () => { spotConfig.intensity = parseFloat(intSlider.value); card.querySelector(`#val-spot-int-${idx}`).innerText = parseFloat(intSlider.value).toFixed(2); deps.updateSpotlightPosition(); });
+  if (enableCb) {
+    enableCb.addEventListener('change', () => {
+      spotConfig.enabled = enableCb.checked;
+      deps.updateSpotlightPosition();
+    });
+  }
+
+  if (hInput) {
+    hInput.addEventListener('input', () => {
+      const val = parseInt(hInput.value, 10);
+      if (!isNaN(val)) {
+        spotConfig.angleH = val;
+        deps.updateSpotlightPosition();
+      }
+    });
+  }
+
+  if (vInput) {
+    vInput.addEventListener('input', () => {
+      const val = parseInt(vInput.value, 10);
+      if (!isNaN(val)) {
+        spotConfig.angleV = val;
+        deps.updateSpotlightPosition();
+      }
+    });
+  }
+
+  if (coneInput) {
+    coneInput.addEventListener('input', () => {
+      const val = parseInt(coneInput.value, 10);
+      if (!isNaN(val)) {
+        spotConfig.cone = val;
+        deps.updateSpotlightPosition();
+      }
+    });
+  }
+
+  if (intInput) {
+    intInput.addEventListener('input', () => {
+      const val = parseFloat(intInput.value);
+      if (!isNaN(val)) {
+        spotConfig.intensity = val;
+        deps.updateSpotlightPosition();
+      }
+    });
+  }
 
   const updateAllColorUI = (newHex) => {
     spotConfig.color = newHex;
-    const rgbVals = hexToRgb(newHex);
     if (colorPicker && colorPicker.value !== newHex) colorPicker.value = newHex;
     if (hexText && hexText.value !== newHex.toUpperCase()) hexText.value = newHex.toUpperCase();
-    if (inputR && parseInt(inputR.value, 10) !== rgbVals.r) inputR.value = rgbVals.r;
-    if (inputG && parseInt(inputG.value, 10) !== rgbVals.g) inputG.value = rgbVals.g;
-    if (inputB && parseInt(inputB.value, 10) !== rgbVals.b) inputB.value = rgbVals.b;
     deps.updateSpotlightPosition();
   };
 
   if (colorPicker) colorPicker.addEventListener('input', () => updateAllColorUI(colorPicker.value));
-  if (hexText) hexText.addEventListener('input', () => { let val = hexText.value.trim(); if (!val.startsWith('#')) val = '#' + val; if (/^#[0-9A-Fa-f]{6}$/.test(val)) updateAllColorUI(val); });
+  if (hexText) {
+    hexText.addEventListener('input', () => {
+      let val = hexText.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) updateAllColorUI(val);
+    });
+  }
 
-  const handleRgbChange = () => {
-    const r = Math.max(0, Math.min(255, parseInt(inputR.value, 10) || 0));
-    const g = Math.max(0, Math.min(255, parseInt(inputG.value, 10) || 0));
-    const b = Math.max(0, Math.min(255, parseInt(inputB.value, 10) || 0));
-    updateAllColorUI(rgbToHex(r, g, b));
-  };
+  if (colorSelect) {
+    colorSelect.addEventListener('change', () => {
+      if (colorSelect.value) updateAllColorUI(colorSelect.value);
+    });
+  }
 
-  if (inputR) inputR.addEventListener('input', handleRgbChange);
-  if (inputG) inputG.addEventListener('input', handleRgbChange);
-  if (inputB) inputB.addEventListener('input', handleRgbChange);
-  if (colorSelect) colorSelect.addEventListener('change', () => { if (colorSelect.value) updateAllColorUI(colorSelect.value); });
   if (removeBtn) {
     removeBtn.addEventListener('click', () => {
       deps.currentSettings.spotlights.splice(idx, 1);

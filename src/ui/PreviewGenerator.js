@@ -7,6 +7,7 @@
 
 import { createProceduralMascot } from '../core/MascotBuilder.js';
 import { createFlagMesh } from '../core/FlagMeshBuilder.js';
+import { ModelThumbnailGenerator } from '../core/ModelThumbnailGenerator.js';
 
 export const DEFAULT_FALLBACK_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
@@ -29,16 +30,23 @@ export const DEFAULT_FALLBACK_ICON = "data:image/svg+xml;utf8," + encodeURICompo
   <path d="M 60 18 L 100 86 C 101.5 88.5 99.8 92 96.8 92 L 23.2 92 C 20.2 92 18.5 88.5 20 86 Z" 
         fill="rgba(245, 158, 11, 0.08)" 
         stroke="url(#triGrad)" 
-        stroke-width="3.5" 
-        stroke-linejoin="round"
-        filter="url(#glow)"/>
-  <g>
-    <animate attributeName="opacity" values="1;0.05;1" dur="1.1s" repeatCount="indefinite" />
-    <line x1="60" y1="40" x2="60" y2="66" stroke="#fbbf24" stroke-width="4.5" stroke-linecap="round"/>
-    <circle cx="60" cy="77" r="2.8" fill="#fbbf24"/>
-  </g>
-  <text x="60" y="108" font-family="Consolas, Monaco, sans-serif" font-size="8" font-weight="bold" fill="#f59e0b" text-anchor="middle" letter-spacing="0.8">GENERATING...</text>
-</svg>`.trim());
+        stroke-width="2.5" 
+        stroke-linejoin="round"/>
+  <circle cx="60" cy="52" r="3.5" fill="#f59e0b" filter="url(#glow)"/>
+  <line x1="60" y1="62" x2="60" y2="76" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>
+`.trim());
+
+/**
+ * Triggers re-scanning and populates model dropdowns in the UI.
+ * @param {Object} ctx - Context dependencies.
+ */
+export function populateModelDropdownUI(ctx) {
+  const { callbacks } = ctx;
+  if (callbacks && callbacks.populateModelDropdown) {
+    callbacks.populateModelDropdown();
+  }
+}
 
 /**
  * Generates a PNG thumbnail preview for a specific model key from isolated renderer canvas.
@@ -84,51 +92,131 @@ export function populateModelDropdown(ctx) {
   gridContainer.innerHTML = '';
 
   const discovered = state && state.discoveredModels ? state.discoveredModels : [];
+  const customModelAssets = window.__assetRegistryManager ? window.__assetRegistryManager.getAssets('model') : [];
+  const customModelNames = customModelAssets.map(a => a.name);
+
   const options = ['procedural', 'flag', ...discovered];
+  customModelNames.forEach(name => {
+    if (!options.includes(name)) {
+      options.push(name);
+    }
+  });
+
   const assetsDir = getAssetsPath();
+
+  const countBadge = document.getElementById('mascot-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${options.length} Mascots`;
+  }
+
+  const activePreviewImg = document.getElementById('mascot-active-preview-img');
+  const activeNameLabel = document.getElementById('mascot-active-name');
+
+  const updateActiveBanner = (activeKey) => {
+    let nameText = activeKey;
+    if (activeKey === 'procedural') nameText = (typeof t === 'function') ? t('default_mascot', 'Default Bunny 🐰') : 'Default Bunny 🐰';
+    else if (activeKey === 'flag') nameText = (typeof t === 'function') ? t('model_flag', 'Country Flag 🎌') : 'Country Flag 🎌';
+    else nameText = activeKey.replace(/\.(glb|gltf|fbx|obj)$/i, '');
+
+    if (activeNameLabel) activeNameLabel.textContent = nameText;
+
+    const matchingAsset = customModelAssets.find(a => a.name === activeKey);
+    if (activePreviewImg) {
+      if (matchingAsset && matchingAsset.thumbnailUrl) {
+        activePreviewImg.src = matchingAsset.thumbnailUrl;
+      } else {
+        const previewPath = path.join(assetsDir, '.previews', `${activeKey}.png`);
+        if (fs.existsSync(previewPath)) {
+          activePreviewImg.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
+        } else {
+          activePreviewImg.src = DEFAULT_FALLBACK_ICON;
+        }
+      }
+    }
+  };
+  updateActiveBanner(currentSettings.activeModel || 'procedural');
 
   options.forEach(modelKey => {
     const card = document.createElement('div');
-    card.className = 'mascot-card';
-    if (currentSettings.activeModel === modelKey) {
-      card.classList.add('selected');
-    }
+    const isSelected = currentSettings.activeModel === modelKey;
+    card.className = `studio-select-card mascot-card ${isSelected ? 'selected' : ''}`;
+    card.setAttribute('data-id', modelKey);
+
+    const thumbWrapper = document.createElement('div');
+    thumbWrapper.className = 'studio-select-thumb asset-thumbnail-wrapper';
 
     const img = document.createElement('img');
-    img.className = 'mascot-thumbnail';
+    img.className = 'mascot-thumbnail asset-thumbnail-img';
     img.dataset.mascot = modelKey;
 
+    const matchingAsset = customModelAssets.find(a => a.name === modelKey);
     const previewPath = path.join(assetsDir, '.previews', `${modelKey}.png`);
-    if (fs.existsSync(previewPath)) {
+
+    if (matchingAsset && matchingAsset.thumbnailUrl) {
+      img.src = matchingAsset.thumbnailUrl;
+    } else if (fs.existsSync(previewPath)) {
       img.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
     } else {
       img.src = DEFAULT_FALLBACK_ICON;
+      if (matchingAsset && (ctx.THREE || window.THREE) && (ctx.GLTFLoader || window.GLTFLoader)) {
+        ModelThumbnailGenerator.captureModelSnapshot({
+          file: matchingAsset.file,
+          objectUrl: matchingAsset.objectUrl,
+          THREE: ctx.THREE || window.THREE,
+          GLTFLoader: ctx.GLTFLoader || window.GLTFLoader
+        }).then(dataUrl => {
+          if (dataUrl) {
+            matchingAsset.thumbnailUrl = dataUrl;
+            img.src = dataUrl;
+            if (currentSettings.activeModel === modelKey && activePreviewImg) {
+              activePreviewImg.src = dataUrl;
+            }
+          }
+        });
+      }
     }
+    thumbWrapper.appendChild(img);
 
     const label = document.createElement('div');
-    label.className = 'mascot-card-label';
+    label.className = 'studio-select-label asset-card-label';
+    let subText = '3D Model';
+
     if (modelKey === 'procedural') {
       label.textContent = (typeof t === 'function') ? t('default_mascot', 'Default Bunny 🐰') : 'Default Bunny 🐰';
+      subText = 'Procedural Mascot';
     } else if (modelKey === 'flag') {
       label.textContent = (typeof t === 'function') ? t('model_flag', 'Country Flag 🎌') : 'Country Flag 🎌';
+      subText = 'Interactive Cloth';
     } else {
-      label.textContent = modelKey.replace(/\.(glb|gltf)$/i, '');
+      label.textContent = modelKey.replace(/\.(glb|gltf|fbx|obj)$/i, '');
+      subText = matchingAsset ? `${matchingAsset.category} • ${matchingAsset.sizeFormatted}` : 'Custom GLTF';
     }
 
-    card.appendChild(img);
+    const sub = document.createElement('div');
+    sub.className = 'studio-select-sub asset-card-sub';
+    sub.textContent = subText;
+
+    card.appendChild(thumbWrapper);
     card.appendChild(label);
+    card.appendChild(sub);
 
     card.addEventListener('click', () => {
       if (currentSettings.activeModel === modelKey) return;
-      gridContainer.querySelectorAll('.mascot-card').forEach(c => c.classList.remove('selected'));
+      gridContainer.querySelectorAll('.studio-select-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
 
+      updateActiveBanner(modelKey);
       modelSelect.value = modelKey;
       modelSelect.dispatchEvent(new Event('change'));
     });
 
     gridContainer.appendChild(card);
   });
+
+  if (window.__assetRegistryManager && !window.__mascotRegistrySubscribed) {
+    window.__mascotRegistrySubscribed = true;
+    window.__assetRegistryManager.subscribe(() => populateModelDropdown(ctx));
+  }
 }
 
 /**

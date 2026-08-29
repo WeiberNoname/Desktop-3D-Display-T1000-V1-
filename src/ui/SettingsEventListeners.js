@@ -295,11 +295,13 @@ export function setupSettingsUI(deps) {
     ));
   }
 
-  if (fontScaleSlider && valFontScale) {
+  if (fontScaleSlider) {
     fontScaleSlider.addEventListener('input', () => {
       const scale = parseFloat(fontScaleSlider.value);
-      valFontScale.innerText = scale.toFixed(2);
-      if (panel) panel.style.setProperty('--panel-font-scale', scale);
+      if (!isNaN(scale)) {
+        if (valFontScale) valFontScale.innerText = scale.toFixed(2);
+        if (panel) panel.style.setProperty('--panel-font-scale', scale);
+      }
     });
   }
 

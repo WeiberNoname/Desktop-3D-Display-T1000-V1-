@@ -203,7 +203,103 @@ export function setupPianoStudioUI(deps) {
     if (selectedKey) {
       presetSelect.value = selectedKey;
     }
+    renderSongGrid();
   };
+
+  // --- Unified Piano Song & Score Card Selection Grid ---
+  const songGrid = document.getElementById('piano-song-grid');
+  const songCountBadge = document.getElementById('piano-song-count');
+  const registry = window.__assetRegistryManager;
+
+  const builtInSongs = [
+    { id: 'fur_elise', name: 'Für Elise', composer: 'Beethoven', mode: 'midi', icon: '🎹', ext: 'MID', type: 'preset' },
+    { id: 'bach_minuet', name: 'Minuet in G', composer: 'Bach', mode: 'midi', icon: '🎹', ext: 'MID', type: 'preset' },
+    { id: 'canon_in_d', name: 'Canon in D', composer: 'Pachelbel', mode: 'xml', icon: '🎼', ext: 'XML', type: 'preset' },
+    { id: 'ode_to_joy', name: 'Ode to Joy', composer: 'Beethoven', mode: 'xml', icon: '🎼', ext: 'XML', type: 'preset' }
+  ];
+
+  const renderSongGrid = () => {
+    if (!songGrid) return;
+    songGrid.innerHTML = '';
+
+    const customAudioAssets = registry ? registry.getAssets('audio') : [];
+    const allSongs = [...builtInSongs];
+
+    hostedMusicFiles.forEach(f => {
+      const isMidi = f.toLowerCase().endsWith('.mid') || f.toLowerCase().endsWith('.midi');
+      allSongs.push({
+        id: `hosted:${f}`,
+        name: f.replace(/\.[^/.]+$/, ''),
+        composer: 'Local File',
+        mode: isMidi ? 'midi' : 'xml',
+        icon: isMidi ? '🎹' : '🎼',
+        ext: isMidi ? 'MID' : 'XML',
+        type: 'hosted',
+        fileName: f
+      });
+    });
+
+    customAudioAssets.forEach(a => {
+      const cleanName = a.name.replace(/\.[^/.]+$/, '');
+      if (!allSongs.some(s => s.name === cleanName)) {
+        allSongs.push({
+          id: `asset:${a.id}`,
+          name: cleanName,
+          composer: 'Asset Hub',
+          mode: a.format === 'musicxml' ? 'xml' : 'midi',
+          icon: a.icon || '🎹',
+          ext: a.ext.toUpperCase(),
+          type: 'asset',
+          asset: a
+        });
+      }
+    });
+
+    if (songCountBadge) {
+      songCountBadge.textContent = `${allSongs.length} Scores`;
+    }
+
+    allSongs.forEach(song => {
+      const card = document.createElement('div');
+      const isSelected = currentTitle.toLowerCase().includes(song.name.toLowerCase());
+      card.className = `studio-select-card ${isSelected ? 'selected' : ''}`;
+      card.setAttribute('data-id', song.id);
+
+      card.innerHTML = `
+        <div class="studio-select-thumb">
+          <div class="asset-thumbnail-placeholder">
+            <span class="asset-placeholder-icon">${song.icon}</span>
+            <span class="asset-ext-badge">.${song.ext}</span>
+          </div>
+        </div>
+        <div class="studio-select-label" title="${song.name}">${song.name}</div>
+        <div class="studio-select-sub">${song.composer}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        document.querySelectorAll('#piano-song-grid .studio-select-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        if (song.type === 'preset') {
+          setMode(song.mode, false);
+          loadPreset(song.id);
+        } else if (song.type === 'hosted') {
+          loadHostedFile(song.fileName);
+        } else if (song.type === 'asset' && song.asset) {
+          if (song.asset.file) {
+            handleFileImport(song.asset.file);
+          }
+        }
+      });
+
+      songGrid.appendChild(card);
+    });
+  };
+
+  if (registry) {
+    registry.subscribe(() => renderSongGrid());
+  }
+  renderSongGrid();
 
   // 3. Dynamic Piano Keyboard Builder (Customizable Key Range)
   let keyElementsMap = new Map();

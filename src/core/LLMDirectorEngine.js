@@ -73,7 +73,53 @@ MULTI-TURN PROACTIVE INSPECTION & CONFIRMATION:
 
     this.toolDefinitions = this.registry.getOpenAISchemas();
     this.diagnosticLogs = [];
+    this.telemetryListeners = [];
     this.pendingProposal = null;
+  }
+
+  /**
+   * Subscribe to live telemetry log updates.
+   */
+  addTelemetryListener(fn) {
+    if (typeof fn === 'function' && !this.telemetryListeners.includes(fn)) {
+      this.telemetryListeners.push(fn);
+    }
+  }
+
+  removeTelemetryListener(fn) {
+    this.telemetryListeners = this.telemetryListeners.filter(l => l !== fn);
+  }
+
+  getTelemetryTraces() {
+    return this.diagnosticLogs;
+  }
+
+  clearTelemetryTraces() {
+    this.diagnosticLogs = [];
+    this.telemetryListeners.forEach(fn => {
+      try { fn({ type: 'clear' }); } catch (e) {}
+    });
+  }
+
+  loadTelemetryDataset(traces) {
+    if (Array.isArray(traces)) {
+      this.diagnosticLogs = traces;
+      this.telemetryListeners.forEach(fn => {
+        try { fn({ type: 'load', traces: this.diagnosticLogs }); } catch (e) {}
+      });
+      return true;
+    }
+    return false;
+  }
+
+  exportTelemetryJSON() {
+    return JSON.stringify({
+      schemaVersion: '1.0',
+      app: 'Desktop 3D Display (T02 V4)',
+      exportedAt: new Date().toISOString(),
+      tracesCount: this.diagnosticLogs.length,
+      traces: this.diagnosticLogs
+    }, null, 2);
   }
 
   /**
@@ -573,6 +619,7 @@ Try telling me: *"resize window to 800x600"*, *"switch to waving flag"*, or *"ma
    */
   async processUserMessage(userText) {
     if (!userText || !userText.trim()) return null;
+    const startTime = Date.now();
 
     // Sync active settings with live DOM controls before processing
     UIStateInspector.syncSettingsFromUI(this.currentSettings);
@@ -594,7 +641,7 @@ Try telling me: *"resize window to 800x600"*, *"switch to waving flag"*, or *"ma
     if (this.endpointUrl) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for local LLM inference
 
         const isChinese = /[\u4e00-\u9fa5]/.test(userText);
         let contextAddition = '';
@@ -781,11 +828,41 @@ Always reply conversationally in the user's language.`
     const afterState = this._captureStateSnapshot();
     const stateDeltas = this._computeStateDeltas(beforeState, afterState);
     const domVerifications = this._verifyPhysicalDOMSync(executedActions);
+    const latencyMs = Date.now() - startTime;
+
+    // Extract impacted domains from actions
+    const domainsImpacted = [];
+    executedActions.forEach(act => {
+      const actLower = act.toLowerCase();
+      if (actLower.includes('scale') || actLower.includes('window') || actLower.includes('model') || actLower.includes('spin') || actLower.includes('bobbing')) {
+        if (!domainsImpacted.includes('display')) domainsImpacted.push('display');
+      }
+      if (actLower.includes('sakura') || actLower.includes('snow') || actLower.includes('weather') || actLower.includes('particle')) {
+        if (!domainsImpacted.includes('atmosphere')) domainsImpacted.push('atmosphere');
+      }
+      if (actLower.includes('light') || actLower.includes('spotlight') || actLower.includes('ambient')) {
+        if (!domainsImpacted.includes('lighting')) domainsImpacted.push('lighting');
+      }
+      if (actLower.includes('physics') || actLower.includes('gravity') || actLower.includes('floor') || actLower.includes('elasticity')) {
+        if (!domainsImpacted.includes('physics')) domainsImpacted.push('physics');
+      }
+      if (actLower.includes('sound') || actLower.includes('mute') || actLower.includes('audio') || actLower.includes('volume') || actLower.includes('piano') || actLower.includes('drum')) {
+        if (!domainsImpacted.includes('sound')) domainsImpacted.push('sound');
+      }
+      if (actLower.includes('flag') || actLower.includes('texture') || actLower.includes('cloth') || actLower.includes('wind')) {
+        if (!domainsImpacted.includes('texture')) domainsImpacted.push('texture');
+      }
+      if (actLower.includes('battery') || actLower.includes('saver') || actLower.includes('click-through') || actLower.includes('mouse') || actLower.includes('gpu') || actLower.includes('refresh') || actLower.includes('save')) {
+        if (!domainsImpacted.includes('system')) domainsImpacted.push('system');
+      }
+    });
 
     // Record rich diagnostic log entry
     const logEntry = {
       id: Date.now(),
+      turnIndex: this.diagnosticLogs.length + 1,
       timestamp: new Date().toISOString(),
+      latencyMs: latencyMs,
       userInput: userText,
       engineMode: llmSucceeded ? (this.apiKey ? `cloud_neural_llm (${this.modelName})` : `local_neural_llm (${this.modelName})`) : 'semantic_heuristic_fallback',
       endpointUrl: this.endpointUrl,
@@ -797,11 +874,17 @@ Always reply conversationally in the user's language.`
       assistantResponse: responseText,
       proposedToolCalls: heuristic.toolCalls || [],
       executedActions: executedActions,
+      domainsImpacted: domainsImpacted,
       stateDeltas: stateDeltas,
       domVerifications: domVerifications,
       stateSnapshot: afterState
     };
     this.diagnosticLogs.push(logEntry);
+
+    // Dispatch live telemetry updates to subscribers
+    this.telemetryListeners.forEach(fn => {
+      try { fn({ type: 'new_entry', entry: logEntry, allTraces: this.diagnosticLogs }); } catch (e) {}
+    });
 
     return assistantMessageObj;
   }

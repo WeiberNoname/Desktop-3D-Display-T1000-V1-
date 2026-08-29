@@ -68,17 +68,41 @@ The application automatically detects, centers, and renders custom 3D assets:
 
 ## ⚙️ 3D Studio Settings Control Suite
 
-The Settings Panel is organized into 8 categorized studio tabs:
+The Settings Panel is organized into 7 standardized studio tabs:
 
-1. **🎯 Display**: Active mascot selector, preview thumbnail generator grid, animation selector, window width/height, and model scale sliders.
-2. **🌀 Motion**: Idle bobbing, position locking, view-only mode, Dynamic Battery Saver (auto-throttles FPS when idle/unfocused), GPU & mouse optimizations, X/Y/Z axis spinning controls, and live Performance Monitor.
-3. **🔦 Lighting**: Multi-source stage spotlight controls (up to 10 lights), master ambient light dimmer, Dark Stage Mode, and Dual Concert presets.
-4. **🌸 Atmosphere**: Sakura Blossom Rain particle engine, Winter Snowfall simulation, particle counts, and fall speeds.
-5. **🎵 Sound**: Ambient weather synthesizer (Sakura breeze & winter wind), 16-step rhythmic drum loops, atmosphere sync toggles, master/track volume sliders, and mascot interaction SFX.
-6. **🎨 Texture**: Custom image texture uploader (drag & drop or file browse for PNG, JPG, WebP, SVG), native 3D Waving Country Flag mesh with real-time harmonic wind billowing physics, preset flag styles, wind speed/amplitude tuning, and texture repeat/roughness/metalness shader controls.
-7. **⚡ Physics**: Enable momentum physics engine, gravity slider, bounciness elasticity, ground landing collider, and momentum throw info.
-8. **🎥 Camera**: First-person camera mode toggle, spatial XYZ coordinate HUD overlay, 3D ground reference grid, viewport controls.
-9. **⚙️ System**: Language selector (12 core locales), UI font scale slider, settings icon placement toggle, and configuration management.
+1. **🤖 AI Director (Tab 1)**: Embodied AI Function Director chat, local/cloud neural LLM endpoint configuration (Ollama, LM Studio, Groq, OpenRouter), RAG app telemetry fusing, and proactive multi-turn inspection dialogues.
+2. **📦 Asset Hub (Tab 2)**: Universal dropzone importer for 3D models, textures, and audio scores with automatic offscreen 3D snapshot rendering and cross-tab propagation.
+3. **🐰 Mascot (Tab 3)**: Active mascot preview banner, standardized 3D selection card grid, and skeletal animation clip selector.
+4. **🔦 Lighting (Tab 4)**: Interactive 3D Stage & Lighting Viewport, multi-source stage spotlights (up to 10 lights), master ambient dimmer, and concert presets.
+5. **🎨 Texture (Tab 5)**: Cloth wind and wave physics, preset flag styles, and custom texture selection grid.
+6. **🎵 Sound (Tab 6)**: Grand Piano Studio with 88-key synthesis, waterfall MIDI visualizer, MusicXML score renderer, classical score library, and ambient atmospheric synthesizers (Snow, Sakura, Drums).
+7. **⚙️ System (Tab 7)**: Centralized configuration hub with window width/height, model scaling, 12-language localization, UI text scaling, GPU performance toggles, and dynamic battery saver.
+
+---
+
+## 🤖 AI Function Director & Local Neural LLM Guide
+
+The **AI Director** tab enables natural language dialogue and direct real-time physical control over all 3D viewport subsystems.
+
+### Connecting Local Offline LLMs
+- **Ollama**:
+  1. Install Ollama via `winget install Ollama.Ollama` or from [ollama.com](https://ollama.com).
+  2. Run a model in terminal: `ollama run llama3.2` or `ollama run qwen2.5:7b`.
+  3. In the Desktop App under **🤖 AI Director $\rightarrow$ ⚙️ LLM Config**, select **Ollama Local (localhost:11434 - llama3.2)** and click **🔄 Check**.
+  4. Status turns **🟢 Connected! Real Neural LLM is active**.
+- **LM Studio**:
+  1. Download LM Studio from [lmstudio.ai](https://lmstudio.ai).
+  2. Load any GGUF model and start the Local Server on port `1234` (enable CORS).
+  3. In the Desktop App, select **LM Studio Local (localhost:1234)** and click **🔄 Check**.
+- **Custom Local Server (llama.cpp / Jan / LocalAI / vLLM)**:
+  1. Select **Custom OpenAI Endpoint**, specify your local endpoint (e.g. `http://localhost:8080/v1`), enter your model name, and click **🔄 Check**.
+
+### Fast Cloud Inference (Free Tier)
+- **Groq Cloud**: Ultra-fast inference with `llama-3.3-70b-versatile` (get free key at [console.groq.com](https://console.groq.com/keys)).
+- **OpenRouter Cloud**: Access to free-tier open models (`meta-llama/llama-3.2-3b-instruct:free` at [openrouter.ai](https://openrouter.ai/keys)).
+
+### 100% Free Offline Heuristic Fallback
+If no local or cloud LLM is active, the app automatically runs on its built-in offline semantic intent engine and friendly companion synthesizer with **0ms latency** and **zero RAM overhead**.
 
 ---
 

@@ -674,8 +674,36 @@ import('../src/core/SoundManager.js').then(({ SoundManager }) => {
                 assert.ok(report.includes('Subsystem Status Overview'), 'Report should contain Subsystem Status Overview table');
                 assert.ok(engine.diagnosticLogs.length > 0, 'Diagnostic logs should contain recorded turns');
 
-                console.log('✅ LLMDirectorEngine, ToolRegistry & AppContextRetriever unit tests PASSED.');
-                console.log('\n🎉 ALL 13 UNIT TEST SUITES PASSED CLEANLY (100% SUCCESS)');
+                // Developer Tools Telemetry & Analytics Suite Tests
+                const traces = engine.getTelemetryTraces();
+                assert.ok(Array.isArray(traces) && traces.length > 0, 'getTelemetryTraces should return non-empty array');
+                const lastTrace = traces[traces.length - 1];
+                assert.ok(typeof lastTrace.latencyMs === 'number', 'Telemetry trace should contain latencyMs');
+                assert.ok(Array.isArray(lastTrace.domainsImpacted), 'Telemetry trace should contain domainsImpacted array');
+                assert.ok(lastTrace.domainsImpacted.includes('display') || lastTrace.domainsImpacted.includes('atmosphere'), 'Should tag impacted domains');
+
+                // Test JSON Export
+                const exportedJson = engine.exportTelemetryJSON();
+                const parsed = JSON.parse(exportedJson);
+                assert.strictEqual(parsed.schemaVersion, '1.0', 'Exported JSON should have schemaVersion 1.0');
+                assert.strictEqual(parsed.traces.length, traces.length, 'Exported JSON should preserve traces count');
+
+                // Test Telemetry Listener & Dataset Plug-Back
+                let listenerNotified = false;
+                engine.addTelemetryListener((evt) => {
+                  if (evt.type === 'load') listenerNotified = true;
+                });
+                const loadResult = engine.loadTelemetryDataset([{ id: 999, userInput: 'test replay', engineMode: 'test', latencyMs: 15, domainsImpacted: ['display'], assistantResponse: 'ok', executedActions: [] }]);
+                assert.strictEqual(loadResult, true, 'loadTelemetryDataset should return true for valid dataset');
+                assert.strictEqual(listenerNotified, true, 'Telemetry listener should be notified of dataset load');
+                assert.strictEqual(engine.getTelemetryTraces().length, 1, 'Loaded dataset should be set active');
+
+                // Test Clear
+                engine.clearTelemetryTraces();
+                assert.strictEqual(engine.getTelemetryTraces().length, 0, 'clearTelemetryTraces should reset logs');
+
+                console.log('✅ LLMDirectorEngine, ToolRegistry, AppContextRetriever & DevTools Telemetry unit tests PASSED.');
+                console.log('\n🎉 ALL 14 UNIT TEST SUITES PASSED CLEANLY (100% SUCCESS)');
               });
             });
           });
