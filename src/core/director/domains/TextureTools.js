@@ -13,7 +13,7 @@ export const TextureTools = {
       parameters: {
         type: 'object',
         properties: {
-          flagPreset: { type: 'string', description: 'Preset flag: "default", "world", "cyber", "star", "rainbow"' },
+          flagPreset: { type: 'string', description: 'Preset flag: "dragon", "cyber", "galaxy", "sakura", "aurora", "ocean"' },
           flagWindSpeed: { type: 'number', description: 'Wind speed multiplier (0.5 to 10.0)' },
           flagWaveIntensity: { type: 'number', description: 'Wave amplitude (0.05 to 1.50)' },
           textureRoughness: { type: 'number', description: 'Surface roughness (0.0 to 1.0)' },
@@ -26,7 +26,7 @@ export const TextureTools = {
           if (isNaN(num)) return def;
           return parseFloat(Math.max(min, Math.min(max, num)).toFixed(2));
         };
-        const validPresets = ['default', 'world', 'cyber', 'star', 'rainbow'];
+        const validPresets = ['eclipse', 'prism', 'zen', 'dragon', 'cyber', 'galaxy', 'sakura', 'aurora', 'ocean', 'default', 'world', 'star', 'rainbow'];
         const preset = args.flagPreset && validPresets.includes(args.flagPreset.toLowerCase()) ? args.flagPreset.toLowerCase() : undefined;
         return {
           flagPreset: preset,
@@ -87,21 +87,35 @@ export const TextureTools = {
     // 1. Preset Flag Styles
     let matchedPreset = null;
     let presetLabel = '';
-    if (/\b(cyber|neon|cyber neon|赛博|霓虹)\b/i.test(text)) {
+    const hasFlagContext = /\b(flag|texture|banner|cloth|pattern|style|preset|theme)\b/i.test(text) || ['旗', '材质', '旗帜', '风格', '预设', '纹理', '图案'].some(w => text.includes(w));
+
+    if (/\b(eclipse flag|solar eclipse|eclipse preset|日食|日蚀旗|日全食)\b/i.test(text) || (hasFlagContext && /\b(eclipse|solar|日食|日蚀)\b/i.test(text))) {
+      matchedPreset = 'eclipse';
+      presetLabel = isChinese ? '日蚀之曜' : 'Solar Eclipse';
+    } else if (/\b(prism flag|geometric prism|prism preset|棱镜|几何棱镜|包豪斯)\b/i.test(text) || (hasFlagContext && /\b(prism|geometric|bauhaus|棱镜|几何)\b/i.test(text))) {
+      matchedPreset = 'prism';
+      presetLabel = isChinese ? '几何棱镜' : 'Geometric Prism';
+    } else if (/\b(zen flag|zen harmony|enso flag|禅意|禅境|太极和风)\b/i.test(text) || (hasFlagContext && /\b(zen|enso|harmony|balance|禅意|禅境)\b/i.test(text))) {
+      matchedPreset = 'zen';
+      presetLabel = isChinese ? '禅意和风' : 'Zen Harmony';
+    } else if (/\b(dragon flag|dragon banner|mythic dragon|dragon crest|神龙旗|龙旗|神龙图腾)\b/i.test(text) || (hasFlagContext && /\b(dragon|mythic|神龙|龙|龙纹)\b/i.test(text))) {
+      matchedPreset = 'dragon';
+      presetLabel = isChinese ? '神龙图腾' : 'Mythic Dragon';
+    } else if (/\b(cyber neon|cyber flag|neon flag|synthwave flag|赛博霓虹|赛博旗|霓虹旗)\b/i.test(text) || (hasFlagContext && /\b(cyber|neon|synthwave|赛博|霓虹)\b/i.test(text))) {
       matchedPreset = 'cyber';
       presetLabel = isChinese ? '赛博霓虹' : 'Cyber Neon';
-    } else if (/\b(world|globe|地球|世界)\b/i.test(text)) {
-      matchedPreset = 'world';
-      presetLabel = isChinese ? '世界地球' : 'World Globe';
-    } else if (/\b(star|royal star|星星|皇家之星)\b/i.test(text)) {
-      matchedPreset = 'star';
-      presetLabel = isChinese ? '皇家之星' : 'Royal Star';
-    } else if (/\b(rainbow|pride|彩虹)\b/i.test(text)) {
-      matchedPreset = 'rainbow';
-      presetLabel = isChinese ? '彩虹' : 'Pride Rainbow';
-    } else if (/\b(royal|tricolor|三色旗|皇家)\b/i.test(text) && !/\b(star)\b/i.test(text)) {
-      matchedPreset = 'default';
-      presetLabel = isChinese ? '皇家三色' : 'Royal Tricolor';
+    } else if (/\b(cosmic nebula|galaxy flag|nebula flag|space flag|星云宇宙|星云旗|银河旗)\b/i.test(text) || (hasFlagContext && /\b(galaxy|nebula|cosmos|space|starlight|星空|星云|银河)\b/i.test(text))) {
+      matchedPreset = 'galaxy';
+      presetLabel = isChinese ? '星云宇宙' : 'Cosmic Nebula';
+    } else if (/\b(sakura flag|sakura banner|sakura texture|sakura preset|sakura style|落樱旗|樱花旗|落樱和风)\b/i.test(text) || (hasFlagContext && /\b(sakura|cherry blossom|樱花|落樱)\b/i.test(text))) {
+      matchedPreset = 'sakura';
+      presetLabel = isChinese ? '落樱和风' : 'Sakura Blossom';
+    } else if (/\b(nordic aurora|aurora flag|aurora preset|aurora style|极光幻境|极光旗|北极光旗)\b/i.test(text) || (hasFlagContext && /\b(aurora|nordic|northern lights|极光|北极光)\b/i.test(text))) {
+      matchedPreset = 'aurora';
+      presetLabel = isChinese ? '极光幻境' : 'Nordic Aurora';
+    } else if (/\b(abyssal wave|ocean flag|wave flag|tidal flag|沧海浪潮|沧海旗|浪潮旗|海浪旗)\b/i.test(text) || (hasFlagContext && /\b(ocean|abyss|tidal|sea|wave|大海|海浪|浪潮)\b/i.test(text))) {
+      matchedPreset = 'ocean';
+      presetLabel = isChinese ? '沧海浪潮' : 'Abyssal Wave';
     }
 
     // 2. Wind Speed & Wave Physics

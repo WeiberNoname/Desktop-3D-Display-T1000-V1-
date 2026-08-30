@@ -1,17 +1,25 @@
 /**
- * ModelThumbnailGenerator (<120 lines)
- * Offscreen WebGL snapshot engine that captures high-quality 3D thumbnail previews for GLB/GLTF models.
+ * ModelThumbnailGenerator
+ * Memory-safe offscreen WebGL snapshot engine backed by GPUAssetManager's
+ * singleton PooledThumbnailRenderer to eliminate WebGL context exhaustion and VRAM leaks.
  */
 
+import { thumbnailRendererPool, disposeHierarchy, disposeMixer } from './GPUAssetManager.js';
+
 export class ModelThumbnailGenerator {
+  /**
+   * Captures an offscreen beauty-angle snapshot of a 3D model, automatically posing
+   * skeletal animations into an active in-motion frame if animations exist.
+   * @param {Object} deps - Dependencies: { file, objectUrl, THREE, GLTFLoader, width, height, animationTime }
+   * @returns {Promise<string|null>} Data URL of the generated PNG thumbnail
+   */
   static async captureModelSnapshot(deps = {}) {
     const {
       file,
       objectUrl,
-      THREE,
-      GLTFLoader,
-      width = 200,
-      height = 200
+      THREE = (typeof window !== 'undefined' ? window.THREE : null),
+      GLTFLoader = (typeof window !== 'undefined' ? window.GLTFLoader : null),
+      animationTime = 0.35
     } = deps;
 
     if (!THREE || !GLTFLoader || (!file && !objectUrl)) {
@@ -23,78 +31,46 @@ export class ModelThumbnailGenerator {
 
     return new Promise((resolve) => {
       try {
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = width;
-        offCanvas.height = height;
-
-        const renderer = new THREE.WebGLRenderer({
-          canvas: offCanvas,
-          alpha: true,
-          antialias: true,
-          preserveDrawingBuffer: true
-        });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(1);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-
-        // Studio Three-Point Lighting
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
-        scene.add(ambLight);
-
-        const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        keyLight.position.set(3, 4, 5);
-        scene.add(keyLight);
-
-        const fillLight = new THREE.DirectionalLight(0xfbbf24, 0.4);
-        fillLight.position.set(-3, 1, -2);
-        scene.add(fillLight);
-
         const loader = new GLTFLoader();
         loader.load(url, (gltf) => {
+          let mixer = null;
+          let model = null;
           try {
-            const model = gltf.scene;
-            const group = new THREE.Group();
-            scene.add(group);
-            group.add(model);
+            model = gltf.scene || gltf;
 
-            // Center Model & Calculate Bounding Box
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
+            // In-Animation Posing:
+            if (gltf.animations && gltf.animations.length > 0) {
+              mixer = new THREE.AnimationMixer(model);
+              const primaryClip = gltf.animations[0];
+              const action = mixer.clipAction(primaryClip);
+              action.play();
 
-            model.position.set(-center.x, -center.y, -center.z);
+              const duration = primaryClip.duration || 1.0;
+              const sample = (animationTime !== undefined && animationTime > 0)
+                ? Math.min(animationTime, duration)
+                : Math.min(duration * 0.25, 0.45);
 
-            const maxDim = Math.max(size.x, size.y, size.z) || 1.0;
-            const fov = camera.fov * (Math.PI / 180);
-            const distance = (maxDim / 2) / Math.tan(fov / 2) * 1.35;
+              mixer.update(sample);
+              model.updateMatrixWorld(true);
+            } else {
+              model.updateMatrixWorld(true);
+            }
 
-            // Beauty Angle (Front-Left slightly elevated)
-            camera.position.set(distance * 0.45, distance * 0.35, distance * 0.95);
-            camera.lookAt(0, 0, 0);
-
-            renderer.render(scene, camera);
-            const dataUrl = offCanvas.toDataURL('image/png');
-
-            // Cleanup resources
-            scene.traverse((obj) => {
-              if (obj.geometry) obj.geometry.dispose();
-              if (obj.material) {
-                if (Array.isArray(obj.material)) {
-                  obj.material.forEach(m => m.dispose());
-                } else {
-                  obj.material.dispose();
-                }
-              }
-            });
-            renderer.dispose();
-            renderer.forceContextLoss();
+            // Capture snapshot using the singleton Pooled WebGL context
+            const dataUrl = thumbnailRendererPool.captureSnapshot(THREE, model);
 
             resolve(dataUrl);
           } catch (e) {
             console.warn('[ModelThumbnailGenerator] Render capture failed:', e);
             resolve(null);
+          } finally {
+            // Clean up temporary model and mixer from GPU memory
+            if (mixer) {
+              disposeMixer(mixer, model);
+            }
+            if (model) {
+              disposeHierarchy(model);
+            }
           }
         }, undefined, (err) => {
           console.warn('[ModelThumbnailGenerator] GLTF load failed:', err);
@@ -105,5 +81,20 @@ export class ModelThumbnailGenerator {
         resolve(null);
       }
     });
+  }
+
+  /**
+   * Captures the live in-animation frame from an active Three.js renderer canvas.
+   * @param {HTMLCanvasElement} canvas - Active WebGL canvas element
+   * @returns {string|null} Data URL of the snapshot
+   */
+  static captureLiveCanvasSnapshot(canvas) {
+    if (!canvas) return null;
+    try {
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      console.warn('[ModelThumbnailGenerator] Live canvas capture error:', e);
+      return null;
+    }
   }
 }

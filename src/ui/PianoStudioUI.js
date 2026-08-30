@@ -1,8 +1,7 @@
 /**
  * Grand Piano Studio UI Controller
- * Manages virtual piano keyboard rendering with custom / full 88-key dynamic range,
- * 1:1 falling-note waterfall alignment, local file hosting in assets/music/,
- * and synchronized sheet music playback.
+ * Orchestrates virtual piano keyboard rendering, waterfall visualizers,
+ * file ingestion/hosting, and playback sequencing via dedicated domain modules.
  */
 
 import { PianoAudioEngine } from '../core/PianoAudioEngine.js';
@@ -10,6 +9,12 @@ import { MidiParserEngine } from '../core/MidiParserEngine.js';
 import { MusicXmlEngine } from '../core/MusicXmlEngine.js';
 import { MusicScoreRenderer } from './MusicScoreRenderer.js';
 import { PianoRollVisualizer } from './PianoRollVisualizer.js';
+import { PianoKeyboardDOM } from './piano/PianoKeyboardDOM.js';
+import { PianoFileManager } from './piano/PianoFileManager.js';
+import { PianoPlaybackController } from './piano/PianoPlaybackController.js';
+import { PianoRangeManager } from './piano/PianoRangeManager.js';
+import { AssetRegistryManager } from '../managers/AssetRegistryManager.js';
+import { eventBus } from '../managers/EventBus.js';
 
 export function setupPianoStudioUI(deps) {
   const {
@@ -24,23 +29,14 @@ export function setupPianoStudioUI(deps) {
     masterGain
   } = deps;
 
-  // 1. Initialize Piano Audio Engine
+  // 1. Initialize Core Engines
   const pianoAudio = new PianoAudioEngine(audioCtx, masterGain);
-
-  // Engines
   const midiEngine = new MidiParserEngine();
   const xmlEngine = new MusicXmlEngine();
-
-  // State
-  let activeMode = 'midi'; // 'midi' | 'xml'
-  let currentTitle = 'Beethoven - Für Elise';
-  let currentMinNote = 21; // A0 (Full Grand Piano default)
-  let currentMaxNote = 108; // C8
-  let rangeMode = 'autofit'; // '88' | 'autofit' | '61' | '49' | '37'
-  let hostedMusicFiles = [];
+  const registry = AssetRegistryManager.getInstance();
 
   // DOM Elements
-  const pianoKeyboard = document.getElementById('piano-keyboard-container');
+  const pianoKeyboardContainer = document.getElementById('piano-keyboard-container');
   const midiCanvas = document.getElementById('piano-midi-canvas');
   const scoreCanvas = document.getElementById('piano-score-canvas');
   const modeMidiBtn = document.getElementById('btn-piano-mode-midi');
@@ -61,6 +57,7 @@ export function setupPianoStudioUI(deps) {
   const dropzone = document.getElementById('piano-dropzone');
   const presetSelect = document.getElementById('piano-preset-select');
   const songTitleBadge = document.getElementById('piano-song-title');
+  const songGrid = document.getElementById('piano-song-grid');
 
   const playBtn = document.getElementById('btn-piano-play');
   const stopBtn = document.getElementById('btn-piano-stop');
@@ -74,757 +71,319 @@ export function setupPianoStudioUI(deps) {
   const sustainCheck = document.getElementById('piano-sustain-check');
 
   // Visualizers
-  let scoreRenderer = null;
-  let midiVisualizer = null;
+  let scoreRenderer = scoreCanvas ? new MusicScoreRenderer(scoreCanvas) : null;
+  let midiVisualizer = midiCanvas ? new PianoRollVisualizer(midiCanvas, { minNote: 21, maxNote: 108 }) : null;
 
-  if (scoreCanvas) {
-    scoreRenderer = new MusicScoreRenderer(scoreCanvas);
-    scoreRenderer.onSeekRequest = (timeSec) => {
-      seekTo(timeSec);
-    };
+  if (scoreRenderer) {
+    scoreRenderer.onSeekRequest = (timeSec) => playback.seek(timeSec);
   }
 
-  if (midiCanvas) {
-    midiVisualizer = new PianoRollVisualizer(midiCanvas, { minNote: currentMinNote, maxNote: currentMaxNote });
-  }
+  // 2. Initialize Domain Modules
+  const keyboardDOM = new PianoKeyboardDOM(pianoKeyboardContainer, (note, vel) => {
+    pianoAudio.playNote(note, vel);
+  });
 
-  // 2. Directory & Hosted File Ingestion (assets/music)
-  const getMusicDirs = () => {
-    const dirs = [];
-    if (fs && path && typeof getAssetsPath === 'function') {
-      try {
-        const baseAssets = getAssetsPath();
-        dirs.push(path.join(baseAssets, 'music'));
-        dirs.push(path.join(baseAssets));
-      } catch (e) {}
+  const rangeManager = new PianoRangeManager(pianoKeyboardContainer, (minNote, maxNote) => {
+    keyboardDOM.render(minNote, maxNote);
+    if (midiVisualizer) {
+      midiVisualizer.setNotes(midiEngine.notes, minNote, maxNote);
     }
-    if (path) {
-      try {
-        dirs.push(path.join(process.cwd(), 'assets', 'music'));
-        dirs.push(path.join(process.cwd(), 'assets'));
-      } catch (e) {}
-    }
-    return dirs;
-  };
+  });
 
-  const getPrimaryMusicDir = () => {
-    if (!fs || !path) return null;
-    let primary = null;
-    if (typeof getAssetsPath === 'function') {
-      try {
-        primary = path.join(getAssetsPath(), 'music');
-      } catch (e) {}
-    }
-    if (!primary) {
-      try {
-        primary = path.join(process.cwd(), 'assets', 'music');
-      } catch (e) {}
-    }
-    if (primary) {
-      try {
-        if (!fs.existsSync(primary)) {
-          fs.mkdirSync(primary, { recursive: true });
+  const fileManager = new PianoFileManager({ fs, path, getAssetsPath, showSpeechBubble, t });
+
+  const playback = new PianoPlaybackController({
+    pianoAudio,
+    midiEngine,
+    xmlEngine,
+    t,
+    onNoteTrigger: (activeNotes, currentSec, activeMeasureIndex) => {
+      keyboardDOM.clearAllKeys();
+      activeNotes.forEach(n => {
+        keyboardDOM.setKeyPressed(n.midiNote, true);
+        if (autoscrollCheck && autoscrollCheck.checked) {
+          rangeManager.scrollToNote(n.midiNote);
         }
-        return primary;
-      } catch (e) {
-        console.warn('Could not create primary music directory:', e);
-      }
-    }
-    return null;
-  };
-
-  const findMusicFile = (fileName) => {
-    if (!fileName || !fs || !path) return null;
-    const dirs = getMusicDirs();
-    for (const d of dirs) {
-      const full = path.join(d, fileName);
-      if (fs.existsSync(full)) {
-        return full;
-      }
-    }
-    return null;
-  };
-
-  const scanHostedMusicFiles = () => {
-    const seen = new Set();
-    const results = [];
-    const dirs = getMusicDirs();
-    dirs.forEach(d => {
-      if (fs && fs.existsSync(d)) {
-        try {
-          const files = fs.readdirSync(d);
-          files.forEach(f => {
-            const lower = f.toLowerCase();
-            if ((lower.endsWith('.mid') || lower.endsWith('.midi') || lower.endsWith('.musicxml') || lower.endsWith('.xml')) && !seen.has(f)) {
-              seen.add(f);
-              results.push(f);
-            }
-          });
-        } catch (e) {}
-      }
-    });
-    hostedMusicFiles = results;
-    return hostedMusicFiles;
-  };
-
-  const updatePresetDropdown = (selectedKey = null) => {
-    if (!presetSelect) return;
-    scanHostedMusicFiles();
-
-    let html = '';
-
-    // Hosted files section
-    if (hostedMusicFiles.length > 0) {
-      html += `<optgroup label="${t ? t('piano_hosted_group', '📁 Hosted Music Library') : '📁 Hosted Music Library'}">`;
-      hostedMusicFiles.forEach(fileName => {
-        const isMidi = fileName.toLowerCase().endsWith('.mid') || fileName.toLowerCase().endsWith('.midi');
-        const icon = isMidi ? '🎹' : '🎼';
-        html += `<option value="hosted:${fileName}">${icon} ${fileName}</option>`;
       });
-      html += `</optgroup>`;
+      if (playback.activeMode === 'midi' && midiVisualizer) {
+        midiVisualizer.updatePlaybackPosition(currentSec);
+      }
+      if (playback.activeMode === 'xml' && scoreRenderer) {
+        scoreRenderer.updatePlaybackPosition(currentSec, activeMeasureIndex || 0, activeNotes);
+      }
+    },
+    onTimeUpdate: (curSec, totalSec) => {
+      if (timelineSlider) {
+        timelineSlider.max = Math.max(1, totalSec);
+        timelineSlider.value = curSec;
+      }
+      if (timeLabel) {
+        const mins = Math.floor(curSec / 60);
+        const secs = Math.floor(curSec % 60);
+        const tMins = Math.floor(totalSec / 60);
+        const tSecs = Math.floor(totalSec % 60);
+        timeLabel.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs} / ${tMins}:${tSecs < 10 ? '0' : ''}${tSecs}`;
+      }
+    },
+    onPlaybackEnd: () => {
+      keyboardDOM.clearAllKeys();
+      if (playBtn) playBtn.innerText = t ? t('piano_play', '▶ Play') : '▶ Play';
     }
+  });
 
-    // Default Presets section
-    html += `<optgroup label="${t ? t('piano_presets_group', '🎵 Built-in Presets') : '🎵 Built-in Presets'}">`;
-    if (activeMode === 'midi') {
-      html += `
-        <option value="fur_elise">🎹 Beethoven - Für Elise (MIDI)</option>
-        <option value="bach_minuet">🎹 Bach - Minuet in G (MIDI)</option>
-      `;
+  // 3. Mode Switcher & Presets
+  const setMode = (mode, autoLoadDefault = true) => {
+    playback.stop();
+    playback.activeMode = mode;
+    currentSettings.pianoActiveMode = mode;
+    if (modeMidiBtn) modeMidiBtn.classList.toggle('selected', mode === 'midi');
+    if (modeXmlBtn) modeXmlBtn.classList.toggle('selected', mode === 'xml');
+    if (modeMidiSection) modeMidiSection.style.display = mode === 'midi' ? 'block' : 'none';
+    if (modeXmlSection) modeXmlSection.style.display = mode === 'xml' ? 'block' : 'none';
+
+    eventBus.emit('piano:modeChanged', mode);
+
+    if (autoLoadDefault) {
+      loadPreset(mode === 'midi' ? 'fur_elise' : 'ode_to_joy');
     } else {
-      html += `
-        <option value="ode_to_joy">🎼 Beethoven - Ode to Joy (MusicXML)</option>
-        <option value="canon_in_d">🎼 Pachelbel - Canon in D (MusicXML)</option>
-      `;
+      renderSongGrid();
     }
-    html += `</optgroup>`;
-
-    presetSelect.innerHTML = html;
-    if (selectedKey) {
-      presetSelect.value = selectedKey;
-    }
-    renderSongGrid();
   };
 
-  // --- Unified Piano Song & Score Card Selection Grid ---
-  const songGrid = document.getElementById('piano-song-grid');
-  const songCountBadge = document.getElementById('piano-song-count');
-  const registry = window.__assetRegistryManager;
-
-  const builtInSongs = [
-    { id: 'fur_elise', name: 'Für Elise', composer: 'Beethoven', mode: 'midi', icon: '🎹', ext: 'MID', type: 'preset' },
-    { id: 'bach_minuet', name: 'Minuet in G', composer: 'Bach', mode: 'midi', icon: '🎹', ext: 'MID', type: 'preset' },
-    { id: 'canon_in_d', name: 'Canon in D', composer: 'Pachelbel', mode: 'xml', icon: '🎼', ext: 'XML', type: 'preset' },
-    { id: 'ode_to_joy', name: 'Ode to Joy', composer: 'Beethoven', mode: 'xml', icon: '🎼', ext: 'XML', type: 'preset' }
-  ];
-
+  // 4. Render Song Grid (Pure Selectable Music Cards)
   const renderSongGrid = () => {
     if (!songGrid) return;
     songGrid.innerHTML = '';
 
-    const customAudioAssets = registry ? registry.getAssets('audio') : [];
-    const allSongs = [...builtInSongs];
+    const activeSongKey = currentSettings.activeMusicFile
+      ? `hosted:${currentSettings.activeMusicFile}`
+      : (currentSettings.activePresetKey || (playback.activeMode === 'midi' ? 'fur_elise' : 'ode_to_joy'));
 
-    hostedMusicFiles.forEach(f => {
-      const isMidi = f.toLowerCase().endsWith('.mid') || f.toLowerCase().endsWith('.midi');
-      allSongs.push({
-        id: `hosted:${f}`,
-        name: f.replace(/\.[^/.]+$/, ''),
-        composer: 'Local File',
-        mode: isMidi ? 'midi' : 'xml',
-        icon: isMidi ? '🎹' : '🎼',
-        ext: isMidi ? 'MID' : 'XML',
-        type: 'hosted',
-        fileName: f
+    // 4.1 Built-in Classical Masterpieces
+    const presets = [
+      { key: 'fur_elise', type: 'midi', ext: 'MIDI', icon: '🎹', title: 'Für Elise', composer: 'Beethoven', bg: 'radial-gradient(circle at center, rgba(245,158,11,0.3) 0%, #141418 70%)', color: '#fbbf24' },
+      { key: 'minuet_in_g', type: 'midi', ext: 'MIDI', icon: '🎹', title: 'Minuet in G', composer: 'J.S. Bach', bg: 'radial-gradient(circle at center, rgba(245,158,11,0.3) 0%, #141418 70%)', color: '#fbbf24' },
+      { key: 'ode_to_joy', type: 'xml', ext: 'XML', icon: '🎼', title: 'Ode to Joy', composer: 'Beethoven', bg: 'radial-gradient(circle at center, rgba(56,189,248,0.3) 0%, #141418 70%)', color: '#38bdf8' },
+      { key: 'twinkle', type: 'xml', ext: 'XML', icon: '🎼', title: 'Twinkle Variations', composer: 'Mozart', bg: 'radial-gradient(circle at center, rgba(56,189,248,0.3) 0%, #141418 70%)', color: '#38bdf8' }
+    ];
+
+    presets.forEach(p => {
+      const isSelected = activeSongKey === p.key;
+      const card = document.createElement('div');
+      card.className = `studio-select-card piano-song-card ${isSelected ? 'selected' : ''}`;
+      card.dataset.songKey = p.key;
+      card.innerHTML = `
+        <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: ${p.bg};">
+          <div style="font-size: 1.9em; filter: drop-shadow(0 0 8px ${p.color});">${p.icon}</div>
+          <span class="asset-ext-badge" style="color: ${p.color}; border-color: ${p.color}66; background: ${p.color}22; margin-top: 4px;">.${p.ext}</span>
+        </div>
+        <div class="studio-select-label asset-card-label">${p.title}</div>
+        <div class="studio-select-sub asset-card-sub">${p.composer}</div>
+      `;
+      card.addEventListener('click', () => {
+        loadPreset(p.key);
       });
+      songGrid.appendChild(card);
     });
 
-    customAudioAssets.forEach(a => {
-      const cleanName = a.name.replace(/\.[^/.]+$/, '');
-      if (!allSongs.some(s => s.name === cleanName)) {
-        allSongs.push({
-          id: `asset:${a.id}`,
-          name: cleanName,
-          composer: 'Asset Hub',
-          mode: a.format === 'musicxml' ? 'xml' : 'midi',
-          icon: a.icon || '🎹',
-          ext: a.ext.toUpperCase(),
-          type: 'asset',
-          asset: a
-        });
+    // 4.2 User Hosted & Ingested Files
+    const hostedFiles = fileManager.scanHostedFiles();
+    const registeredAudio = registry ? registry.getAssets('audio') : [];
+
+    const allCustom = new Map();
+    hostedFiles.forEach(f => allCustom.set(f, { name: f, isHosted: true }));
+    registeredAudio.forEach(a => {
+      if (!allCustom.has(a.name)) {
+        allCustom.set(a.name, { name: a.name, asset: a });
       }
     });
 
-    if (songCountBadge) {
-      songCountBadge.textContent = `${allSongs.length} Scores`;
-    }
+    allCustom.forEach((item, fName) => {
+      const isSelected = activeSongKey === `hosted:${fName}`;
+      const lower = fName.toLowerCase();
+      const isMidi = lower.endsWith('.mid') || lower.endsWith('.midi');
+      const isXml = lower.endsWith('.xml') || lower.endsWith('.musicxml');
+      const icon = isMidi ? '🎹' : (isXml ? '🎼' : '🎵');
+      const ext = isMidi ? 'MIDI' : (isXml ? 'XML' : 'AUDIO');
+      const color = isMidi ? '#fbbf24' : '#38bdf8';
+      const bg = isMidi
+        ? 'radial-gradient(circle at center, rgba(245,158,11,0.25) 0%, #141418 70%)'
+        : 'radial-gradient(circle at center, rgba(56,189,248,0.25) 0%, #141418 70%)';
 
-    allSongs.forEach(song => {
       const card = document.createElement('div');
-      const isSelected = currentTitle.toLowerCase().includes(song.name.toLowerCase());
-      card.className = `studio-select-card ${isSelected ? 'selected' : ''}`;
-      card.setAttribute('data-id', song.id);
-
+      card.className = `studio-select-card piano-song-card ${isSelected ? 'selected' : ''}`;
+      card.dataset.songKey = `hosted:${fName}`;
       card.innerHTML = `
-        <div class="studio-select-thumb">
-          <div class="asset-thumbnail-placeholder">
-            <span class="asset-placeholder-icon">${song.icon}</span>
-            <span class="asset-ext-badge">.${song.ext}</span>
-          </div>
+        <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: ${bg};">
+          <div style="font-size: 1.9em; filter: drop-shadow(0 0 8px ${color});">${icon}</div>
+          <span class="asset-ext-badge" style="color: ${color}; border-color: ${color}66; background: ${color}22; margin-top: 4px;">.${ext}</span>
         </div>
-        <div class="studio-select-label" title="${song.name}">${song.name}</div>
-        <div class="studio-select-sub">${song.composer}</div>
+        <div class="studio-select-label asset-card-label" title="${fName}">${fName.replace(/\.[^/.]+$/, '')}</div>
+        <div class="studio-select-sub asset-card-sub">Local Score</div>
       `;
 
       card.addEventListener('click', () => {
-        document.querySelectorAll('#piano-song-grid .studio-select-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-
-        if (song.type === 'preset') {
-          setMode(song.mode, false);
-          loadPreset(song.id);
-        } else if (song.type === 'hosted') {
-          loadHostedFile(song.fileName);
-        } else if (song.type === 'asset' && song.asset) {
-          if (song.asset.file) {
-            handleFileImport(song.asset.file);
-          }
+        if (item.isHosted) {
+          loadHostedFile(fName);
+        } else if (item.asset && item.asset.file) {
+          handleFileImport(item.asset.file);
         }
       });
 
       songGrid.appendChild(card);
     });
-  };
 
-  if (registry) {
-    registry.subscribe(() => renderSongGrid());
-  }
-  renderSongGrid();
-
-  // 3. Dynamic Piano Keyboard Builder (Customizable Key Range)
-  let keyElementsMap = new Map();
-
-  const rebuildKeyboard = () => {
-    if (!pianoKeyboard) return;
-    pianoKeyboard.innerHTML = '';
-    keyElementsMap.clear();
-
-    const whiteNotes = [0, 2, 4, 5, 7, 9, 11];
-    const keyboardWrapper = document.createElement('div');
-    keyboardWrapper.className = 'virtual-piano-keys';
-
-    for (let note = currentMinNote; note <= currentMaxNote; note++) {
-      const noteInOctave = note % 12;
-      const isWhite = whiteNotes.includes(noteInOctave);
-
-      const keyEl = document.createElement('div');
-      keyEl.className = isWhite ? 'piano-key white-key' : 'piano-key black-key';
-      keyEl.dataset.note = note;
-      keyEl.dataset.noteName = PianoAudioEngine.midiToNoteName(note);
-
-      // Label for C notes and shortcuts
-      const noteLabel = document.createElement('span');
-      noteLabel.className = 'piano-key-label';
-      if (noteInOctave === 0) {
-        noteLabel.innerText = `C${Math.floor(note / 12) - 1}`;
-        if (note === 60) {
-          noteLabel.innerText = 'C4 (Mid)';
-          keyEl.classList.add('middle-c-key');
-        }
-      } else if (note === 21) {
-        noteLabel.innerText = 'A0';
-      }
-      keyEl.appendChild(noteLabel);
-
-      // Mouse triggers
-      keyEl.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        triggerKeyNote(note, 0.9);
-      });
-      keyEl.addEventListener('mouseup', () => releaseKeyNote(note));
-      keyEl.addEventListener('mouseleave', () => releaseKeyNote(note));
-
-      // Touch triggers
-      keyEl.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        triggerKeyNote(note, 0.9);
-      }, { passive: false });
-      keyEl.addEventListener('touchend', () => releaseKeyNote(note));
-
-      keyboardWrapper.appendChild(keyEl);
-      keyElementsMap.set(note, keyEl);
-    }
-
-    pianoKeyboard.appendChild(keyboardWrapper);
-
-    // Synchronize MIDI Visualizer boundaries
-    if (midiVisualizer) {
-      midiVisualizer.setNotes(midiEngine.notes, currentMinNote, currentMaxNote);
+    const songCountEl = document.getElementById('piano-song-count');
+    if (songCountEl) {
+      songCountEl.innerText = `${presets.length + allCustom.size} Scores`;
     }
   };
 
-  const applyRangeMode = (mode) => {
-    rangeMode = mode;
-    if (mode === '88') {
-      currentMinNote = 21; // A0
-      currentMaxNote = 108; // C8
-    } else if (mode === '61') {
-      currentMinNote = 36; // C2
-      currentMaxNote = 96; // C7
-    } else if (mode === '49') {
-      currentMinNote = 36; // C2
-      currentMaxNote = 84; // C6
-    } else if (mode === '37') {
-      currentMinNote = 48; // C3
-      currentMaxNote = 84; // C6
-    } else if (mode === 'autofit') {
-      const activeNotes = activeMode === 'midi' ? midiEngine.notes : xmlEngine.playableNotes;
-      if (activeNotes && activeNotes.length > 0) {
-        const minMidi = Math.min(...activeNotes.map(n => n.midiNote));
-        const maxMidi = Math.max(...activeNotes.map(n => n.midiNote));
-        // Pad to nearest full octave with safety clamps (A0=21, C8=108)
-        currentMinNote = Math.max(21, Math.floor((minMidi - 2) / 12) * 12);
-        currentMaxNote = Math.min(108, Math.ceil((maxMidi + 3) / 12) * 12);
-      } else {
-        currentMinNote = 36;
-        currentMaxNote = 96;
-      }
-    }
-
-    rebuildKeyboard();
-  };
-
-  if (rangeSelect) {
-    rangeSelect.addEventListener('change', () => {
-      applyRangeMode(rangeSelect.value);
-    });
-  }
-
-  // Scroll keyboard to specific note or offset
-  const scrollToNote = (midiNote) => {
-    if (!pianoKeyboard || !keyElementsMap) return;
-    const el = keyElementsMap.get(midiNote);
-    if (el) {
-      const elOffset = el.offsetLeft;
-      const containerWidth = pianoKeyboard.clientWidth;
-      const targetScroll = Math.max(0, elOffset - containerWidth / 2 + el.clientWidth / 2);
-      pianoKeyboard.scrollTo({ left: targetScroll, behavior: 'smooth' });
-    }
-  };
-
-  // Octave navigation listeners
-  if (btnOctaveBass) {
-    btnOctaveBass.addEventListener('click', () => {
-      [btnOctaveBass, btnOctaveMid, btnOctaveTreble].forEach(b => b && b.classList.remove('active'));
-      btnOctaveBass.classList.add('active');
-      scrollToNote(Math.max(currentMinNote, 36));
-    });
-  }
-
-  if (btnOctaveMid) {
-    btnOctaveMid.addEventListener('click', () => {
-      [btnOctaveBass, btnOctaveMid, btnOctaveTreble].forEach(b => b && b.classList.remove('active'));
-      btnOctaveMid.classList.add('active');
-      scrollToNote(60);
-    });
-  }
-
-  if (btnOctaveTreble) {
-    btnOctaveTreble.addEventListener('click', () => {
-      [btnOctaveBass, btnOctaveMid, btnOctaveTreble].forEach(b => b && b.classList.remove('active'));
-      btnOctaveTreble.classList.add('active');
-      scrollToNote(Math.min(currentMaxNote, 84));
-    });
-  }
-
-  if (btnOctaveLeft) {
-    btnOctaveLeft.addEventListener('click', () => {
-      pianoKeyboard.scrollBy({ left: -160, behavior: 'smooth' });
-    });
-  }
-
-  if (btnOctaveRight) {
-    btnOctaveRight.addEventListener('click', () => {
-      pianoKeyboard.scrollBy({ left: 160, behavior: 'smooth' });
-    });
-  }
-
-  const highlightKey = (midiNote, active) => {
-    if (!keyElementsMap) return;
-    const el = keyElementsMap.get(midiNote);
-    if (el) {
-      if (active) {
-        el.classList.add('active-key');
-        // Auto-follow active note if enabled
-        if (autoscrollCheck && autoscrollCheck.checked) {
-          const elOffset = el.offsetLeft;
-          const scrollLeft = pianoKeyboard.scrollLeft;
-          const containerWidth = pianoKeyboard.clientWidth;
-          if (elOffset < scrollLeft + 30 || elOffset > scrollLeft + containerWidth - 50) {
-            scrollToNote(midiNote);
-          }
-        }
-      } else {
-        el.classList.remove('active-key');
-      }
-    }
-  };
-
-  const clearAllHighlights = () => {
-    if (!keyElementsMap) return;
-    keyElementsMap.forEach(el => el.classList.remove('active-key'));
-  };
-
-  const triggerKeyNote = (midiNote, vel = 0.85) => {
-    pianoAudio.playNote(midiNote, vel);
-    highlightKey(midiNote, true);
-  };
-
-  const releaseKeyNote = (midiNote) => {
-    pianoAudio.stopNote(midiNote);
-    highlightKey(midiNote, false);
-  };
-
-  // 4. PC Keyboard Shortcuts Mapping (C4 to E5)
-  const pcKeyMap = {
-    'KeyA': 60, // C4
-    'KeyW': 61, // C#4
-    'KeyS': 62, // D4
-    'KeyE': 63, // D#4
-    'KeyD': 64, // E4
-    'KeyF': 65, // F4
-    'KeyT': 66, // F#4
-    'KeyG': 67, // G4
-    'KeyY': 68, // G#4
-    'KeyH': 69, // A4
-    'KeyU': 70, // A#4
-    'KeyJ': 71, // B4
-    'KeyK': 72, // C5
-    'KeyO': 73, // C#5
-    'KeyL': 74, // D5
-    'KeyP': 75, // D#5
-    'Semicolon': 76 // E5
-  };
-
-  const activePcKeys = new Set();
-  window.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-    const midi = pcKeyMap[e.code];
-    if (midi && !activePcKeys.has(e.code)) {
-      activePcKeys.add(e.code);
-      triggerKeyNote(midi, 0.9);
-    }
-  });
-
-  window.addEventListener('keyup', (e) => {
-    const midi = pcKeyMap[e.code];
-    if (midi && activePcKeys.has(e.code)) {
-      activePcKeys.delete(e.code);
-      releaseKeyNote(midi);
-    }
-  });
-
-  // 5. Mode Switcher (MIDI vs MusicXML)
-  const setMode = (mode, autoLoadDefault = true) => {
-    stopPlayback();
-    activeMode = mode;
-
-    if (modeMidiBtn) modeMidiBtn.classList.toggle('active', mode === 'midi');
-    if (modeXmlBtn) modeXmlBtn.classList.toggle('active', mode === 'xml');
-    if (modeMidiSection) modeMidiSection.style.display = mode === 'midi' ? 'block' : 'none';
-    if (modeXmlSection) modeXmlSection.style.display = mode === 'xml' ? 'block' : 'none';
-
-    updatePresetDropdown();
-
-    if (autoLoadDefault) {
-      if (mode === 'midi') {
-        loadPreset('fur_elise');
-      } else {
-        loadPreset('ode_to_joy');
-      }
-    }
-  };
-
-  if (modeMidiBtn) modeMidiBtn.addEventListener('click', () => setMode('midi', true));
-  if (modeXmlBtn) modeXmlBtn.addEventListener('click', () => setMode('xml', true));
-
-  // 6. Preset & Hosted File Loader
   const loadHostedFile = (fileName) => {
-    const fullPath = findMusicFile(fileName);
+    const fullPath = fileManager.findMusicFile(fileName);
     if (!fullPath || !fs) return;
 
-    stopPlayback();
+    playback.stop();
     const lower = fileName.toLowerCase();
 
     if (lower.endsWith('.mid') || lower.endsWith('.midi')) {
       const buffer = fs.readFileSync(fullPath);
       const parsedNotes = midiEngine.parse(buffer);
       setMode('midi', false);
-      currentTitle = fileName.replace(/\.[^/.]+$/, '');
-      if (songTitleBadge) songTitleBadge.innerText = `🎹 ${currentTitle} (${parsedNotes.length} notes)`;
-      if (rangeMode === 'autofit') applyRangeMode('autofit');
-      else if (midiVisualizer) midiVisualizer.setNotes(midiEngine.notes, currentMinNote, currentMaxNote);
-      updateTimelineUI(0, midiEngine.totalDurationSec);
+      const title = fileName.replace(/\.[^/.]+$/, '');
+      if (songTitleBadge) songTitleBadge.innerText = `🎹 ${title} (${parsedNotes.length} notes)`;
+      rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', midiEngine.notes);
     } else if (lower.endsWith('.xml') || lower.endsWith('.musicxml')) {
       const xmlText = fs.readFileSync(fullPath, 'utf8');
       xmlEngine.parse(xmlText);
       setMode('xml', false);
-      currentTitle = `${xmlEngine.composer || 'Library'} - ${xmlEngine.title || fileName}`;
-      if (songTitleBadge) songTitleBadge.innerText = `🎼 ${currentTitle} (${xmlEngine.playableNotes.length} notes)`;
+      const title = `${xmlEngine.composer || 'Library'} - ${xmlEngine.title || fileName}`;
+      if (songTitleBadge) songTitleBadge.innerText = `🎼 ${title} (${xmlEngine.playableNotes.length} notes)`;
       if (scoreRenderer) scoreRenderer.setScore(xmlEngine);
-      if (rangeMode === 'autofit') applyRangeMode('autofit');
-      updateTimelineUI(0, xmlEngine.totalDurationSec);
+      rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', xmlEngine.playableNotes);
     }
 
     currentSettings.activeMusicFile = fileName;
     if (saveSettingsFile) saveSettingsFile();
-    updatePresetDropdown(`hosted:${fileName}`);
+    renderSongGrid();
   };
 
   const loadPreset = (presetKey) => {
-    stopPlayback();
+    playback.stop();
     if (presetKey.startsWith('hosted:')) {
-      const fileName = presetKey.replace(/^hosted:/, '');
-      loadHostedFile(fileName);
+      loadHostedFile(presetKey.replace(/^hosted:/, ''));
       return;
     }
 
     currentSettings.activeMusicFile = '';
+    currentSettings.activePresetKey = presetKey;
     if (saveSettingsFile) saveSettingsFile();
 
-    if (activeMode === 'midi') {
-      const parsedEngine = MidiParserEngine.getPresetMidi(presetKey);
-      midiEngine.notes = parsedEngine.notes;
-      midiEngine.totalDurationSec = parsedEngine.totalDurationSec;
-      currentTitle = presetKey === 'fur_elise' ? 'Beethoven - Für Elise' : 'Bach - Minuet in G';
-      if (songTitleBadge) songTitleBadge.innerText = `🎹 ${currentTitle}`;
-      if (rangeMode === 'autofit') applyRangeMode('autofit');
-      else if (midiVisualizer) midiVisualizer.setNotes(midiEngine.notes, currentMinNote, currentMaxNote);
+    if (presetKey === 'fur_elise' || presetKey === 'minuet_in_g' || presetKey === 'bach_minuet') {
+      playback.activeMode = 'midi';
+      if (modeMidiBtn) modeMidiBtn.classList.toggle('selected', true);
+      if (modeXmlBtn) modeXmlBtn.classList.toggle('selected', false);
+      if (modeMidiSection) modeMidiSection.style.display = 'block';
+      if (modeXmlSection) modeXmlSection.style.display = 'none';
+
+      const parsed = MidiParserEngine.getPresetMidi(presetKey);
+      midiEngine.notes = parsed.notes;
+      midiEngine.totalDurationSec = parsed.totalDurationSec;
+      const title = (presetKey === 'minuet_in_g' || presetKey === 'bach_minuet') ? 'Bach - Minuet in G' : 'Beethoven - Für Elise';
+      if (songTitleBadge) songTitleBadge.innerText = `🎹 ${title}`;
+      rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', midiEngine.notes);
     } else {
-      const parsedXml = MusicXmlEngine.getPresetXml(presetKey);
-      xmlEngine.title = parsedXml.title;
-      xmlEngine.composer = parsedXml.composer;
-      xmlEngine.measures = parsedXml.measures;
-      xmlEngine.playableNotes = parsedXml.playableNotes;
-      xmlEngine.totalDurationSec = parsedXml.totalDurationSec;
-      currentTitle = `${parsedXml.composer} - ${parsedXml.title}`;
-      if (songTitleBadge) songTitleBadge.innerText = `🎼 ${currentTitle}`;
+      playback.activeMode = 'xml';
+      if (modeMidiBtn) modeMidiBtn.classList.toggle('selected', false);
+      if (modeXmlBtn) modeXmlBtn.classList.toggle('selected', true);
+      if (modeMidiSection) modeMidiSection.style.display = 'none';
+      if (modeXmlSection) modeXmlSection.style.display = 'block';
+
+      const parsed = MusicXmlEngine.getPresetXml(presetKey);
+      xmlEngine.title = parsed.title;
+      xmlEngine.composer = parsed.composer;
+      xmlEngine.measures = parsed.measures;
+      xmlEngine.playableNotes = parsed.playableNotes;
+      xmlEngine.totalDurationSec = parsed.totalDurationSec;
+      if (songTitleBadge) songTitleBadge.innerText = `🎼 ${parsed.composer} - ${parsed.title}`;
       if (scoreRenderer) scoreRenderer.setScore(xmlEngine);
-      if (rangeMode === 'autofit') applyRangeMode('autofit');
+      rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', xmlEngine.playableNotes);
     }
-    updateTimelineUI(0, getActiveEngine().totalDurationSec);
+    renderSongGrid();
   };
 
-  if (presetSelect) {
-    presetSelect.addEventListener('change', () => {
-      loadPreset(presetSelect.value);
-    });
-  }
-
-  // 7. Custom File Ingestion & Permanent Local Hosting
-  const saveAndHostMusicFile = (file, fileBufferOrText) => {
-    const primaryDir = getPrimaryMusicDir();
-    const fileName = file.name;
-
-    if (primaryDir && fs && path) {
-      try {
-        const destPath = path.join(primaryDir, fileName);
-        if (file.path && fs.existsSync(file.path)) {
-          fs.copyFileSync(file.path, destPath);
-        } else if (fileBufferOrText instanceof ArrayBuffer) {
-          fs.writeFileSync(destPath, Buffer.from(fileBufferOrText));
-        } else if (typeof fileBufferOrText === 'string') {
-          fs.writeFileSync(destPath, fileBufferOrText, 'utf8');
-        }
-      } catch (err) {
-        console.warn('Could not write file to primary music directory:', err);
-      }
-    }
-
-    currentSettings.activeMusicFile = fileName;
-    if (saveSettingsFile) saveSettingsFile();
-
-    if (showSpeechBubble) {
-      showSpeechBubble(`Imported Sheet / MIDI:\n${fileName} 🎵`, 3500);
-    }
-  };
-
+  // 5. File Ingestion & Drag Drop
   const handleFileImport = (file) => {
     if (!file) return;
-    stopPlayback();
     const fileName = file.name;
-    const lowerName = fileName.toLowerCase();
+    const lower = fileName.toLowerCase();
 
-    if (lowerName.endsWith('.mid') || lowerName.endsWith('.midi')) {
+    if (lower.endsWith('.mid') || lower.endsWith('.midi')) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const parsedNotes = midiEngine.parse(e.target.result);
-          if (!parsedNotes || parsedNotes.length === 0) {
-            alert('Warning: No playable musical notes found in this MIDI file.');
-            return;
-          }
-          saveAndHostMusicFile(file, e.target.result);
+          const notes = midiEngine.parse(e.target.result);
+          if (!notes || notes.length === 0) return alert('No playable notes in MIDI');
+          fileManager.saveAndHostFile(file, e.target.result);
           setMode('midi', false);
-          currentTitle = fileName.replace(/\.[^/.]+$/, '');
-          if (songTitleBadge) songTitleBadge.innerText = `🎹 ${currentTitle} (${parsedNotes.length} notes)`;
-          if (rangeMode === 'autofit') applyRangeMode('autofit');
-          else if (midiVisualizer) midiVisualizer.setNotes(midiEngine.notes, currentMinNote, currentMaxNote);
-          updateTimelineUI(0, midiEngine.totalDurationSec);
-          updatePresetDropdown(`hosted:${fileName}`);
-        } catch (err) {
-          alert(`MIDI Import Error: ${err.message}`);
-          console.error('MIDI parse error:', err);
-        }
+          if (songTitleBadge) songTitleBadge.innerText = `🎹 ${fileName} (${notes.length} notes)`;
+          rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', midiEngine.notes);
+          renderSongGrid();
+        } catch (err) { alert(`MIDI Error: ${err.message}`); }
       };
       reader.readAsArrayBuffer(file);
-    } else if (lowerName.endsWith('.xml') || lowerName.endsWith('.musicxml')) {
+    } else if (lower.endsWith('.xml') || lower.endsWith('.musicxml')) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           xmlEngine.parse(e.target.result);
-          if (!xmlEngine.playableNotes || xmlEngine.playableNotes.length === 0) {
-            alert('Warning: No playable musical notes found in this MusicXML file.');
-            return;
-          }
-          saveAndHostMusicFile(file, e.target.result);
+          if (!xmlEngine.playableNotes || xmlEngine.playableNotes.length === 0) return alert('No playable notes in MusicXML');
+          fileManager.saveAndHostFile(file, e.target.result);
           setMode('xml', false);
-          currentTitle = `${xmlEngine.composer || 'Library'} - ${xmlEngine.title || fileName}`;
-          if (songTitleBadge) songTitleBadge.innerText = `🎼 ${currentTitle} (${xmlEngine.playableNotes.length} notes)`;
+          if (songTitleBadge) songTitleBadge.innerText = `🎼 ${xmlEngine.title || fileName}`;
           if (scoreRenderer) scoreRenderer.setScore(xmlEngine);
-          if (rangeMode === 'autofit') applyRangeMode('autofit');
-          updateTimelineUI(0, xmlEngine.totalDurationSec);
-          updatePresetDropdown(`hosted:${fileName}`);
-        } catch (err) {
-          alert(`MusicXML Import Error: ${err.message}`);
-          console.error('MusicXML parse error:', err);
-        }
+          rangeManager.calculateRange(currentSettings.pianoRangeMode || 'autofit', xmlEngine.playableNotes);
+          renderSongGrid();
+        } catch (err) { alert(`MusicXML Error: ${err.message}`); }
       };
       reader.readAsText(file);
-    } else {
-      alert(t ? t('piano_invalid_file', 'Please import a valid .mid, .midi, .musicxml, or .xml file.') : 'Please import a valid .mid, .midi, .musicxml, or .xml file.');
     }
   };
 
   if (browseBtn && fileInput) {
     browseBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleFileImport(e.target.files[0]);
-      }
+      if (e.target.files && e.target.files[0]) handleFileImport(e.target.files[0]);
     });
   }
 
   if (dropzone) {
-    ['dragenter', 'dragover'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.classList.add('drag-over');
-      });
-    });
-    ['dragleave', 'drop'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('drag-over');
-      });
-    });
+    ['dragenter', 'dragover'].forEach(n => dropzone.addEventListener(n, (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); }));
+    ['dragleave', 'drop'].forEach(n => dropzone.addEventListener(n, (e) => { e.preventDefault(); dropzone.classList.remove('drag-over'); }));
     dropzone.addEventListener('drop', (e) => {
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleFileImport(e.dataTransfer.files[0]);
-      }
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) handleFileImport(e.dataTransfer.files[0]);
     });
   }
 
-  // Global window dropzone integration for music files
-  window.addEventListener('drop', (e) => {
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const f = e.dataTransfer.files[0];
-      const lower = f.name.toLowerCase();
-      if (lower.endsWith('.mid') || lower.endsWith('.midi') || lower.endsWith('.musicxml') || lower.endsWith('.xml')) {
-        handleFileImport(f);
-      }
-    }
-  });
+  // 6. Wire Transport Listeners
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      const isPlaying = playback.togglePlay(audioCtx, masterGain);
+      playBtn.innerText = isPlaying ? (t ? t('piano_pause', '⏸ Pause') : '⏸ Pause') : (t ? t('piano_play', '▶ Play') : '▶ Play');
+    });
+  }
 
-  // 8. Playback Sequencer Synchronization
-  const getActiveEngine = () => activeMode === 'midi' ? midiEngine : xmlEngine;
-
-  const updateTimelineUI = (curSec, totalSec) => {
-    if (timelineSlider) {
-      timelineSlider.max = Math.max(1, totalSec);
-      timelineSlider.value = curSec;
-    }
-    if (timeLabel) {
-      const formatTime = (s) => {
-        const mins = Math.floor(s / 60);
-        const secs = Math.floor(s % 60);
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-      };
-      timeLabel.innerText = `${formatTime(curSec)} / ${formatTime(totalSec)}`;
-    }
-  };
-
-  // MIDI Event Hooks
-  midiEngine.onNoteTrigger = (activeNotes, currentSec) => {
-    clearAllHighlights();
-    activeNotes.forEach(n => highlightKey(n.midiNote, true));
-    if (midiVisualizer) midiVisualizer.updatePlaybackPosition(currentSec);
-  };
-  midiEngine.onTimeUpdate = (curSec, totalSec) => {
-    updateTimelineUI(curSec, totalSec);
-  };
-  midiEngine.onPlaybackEnd = () => {
-    clearAllHighlights();
-    if (playBtn) playBtn.innerText = t ? t('piano_play', '▶ Play') : '▶ Play';
-  };
-
-  // MusicXML Event Hooks
-  xmlEngine.onNoteTrigger = (activeNotes, currentSec, activeMeasureIndex) => {
-    clearAllHighlights();
-    activeNotes.forEach(n => highlightKey(n.midiNote, true));
-    if (scoreRenderer) scoreRenderer.updatePlaybackPosition(currentSec, activeMeasureIndex, activeNotes);
-  };
-  xmlEngine.onTimeUpdate = (curSec, totalSec) => {
-    updateTimelineUI(curSec, totalSec);
-  };
-  xmlEngine.onPlaybackEnd = () => {
-    clearAllHighlights();
-    if (playBtn) playBtn.innerText = t ? t('piano_play', '▶ Play') : '▶ Play';
-  };
-
-  // 9. Transport Control Handlers
-  const togglePlay = () => {
-    const engine = getActiveEngine();
-    if (engine.isPlaying) {
-      engine.pause();
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      playback.stop();
+      keyboardDOM.clearAllKeys();
       if (playBtn) playBtn.innerText = t ? t('piano_play', '▶ Play') : '▶ Play';
-    } else {
-      pianoAudio.setContext(audioCtx, masterGain);
-      engine.play(pianoAudio);
-      if (playBtn) playBtn.innerText = t ? t('piano_pause', '⏸ Pause') : '⏸ Pause';
-    }
-  };
-
-  const stopPlayback = () => {
-    const engine = getActiveEngine();
-    engine.stop();
-    clearAllHighlights();
-    if (playBtn) playBtn.innerText = t ? t('piano_play', '▶ Play') : '▶ Play';
-  };
-
-  const seekTo = (timeSec) => {
-    const engine = getActiveEngine();
-    engine.seek(timeSec);
-    if (activeMode === 'midi' && midiVisualizer) midiVisualizer.updatePlaybackPosition(timeSec);
-    if (activeMode === 'xml' && scoreRenderer) scoreRenderer.updatePlaybackPosition(timeSec, 0, []);
-  };
-
-  if (playBtn) playBtn.addEventListener('click', togglePlay);
-  if (stopBtn) stopBtn.addEventListener('click', stopPlayback);
+    });
+  }
 
   if (timelineSlider) {
     timelineSlider.addEventListener('input', () => {
-      seekTo(parseFloat(timelineSlider.value) || 0);
+      playback.seek(parseFloat(timelineSlider.value) || 0);
     });
   }
 
@@ -832,8 +391,7 @@ export function setupPianoStudioUI(deps) {
     tempoSlider.addEventListener('input', () => {
       const mult = parseFloat(tempoSlider.value) || 1.0;
       if (tempoLabel) tempoLabel.innerText = `${mult.toFixed(2)}x`;
-      midiEngine.setTempoMultiplier(mult);
-      xmlEngine.setTempoMultiplier(mult);
+      playback.setTempo(mult);
     });
   }
 
@@ -841,7 +399,7 @@ export function setupPianoStudioUI(deps) {
     pianoVolSlider.addEventListener('input', () => {
       const vol = parseFloat(pianoVolSlider.value) || 0.85;
       if (pianoVolLabel) pianoVolLabel.innerText = `${Math.round(vol * 100)}%`;
-      pianoAudio.setVolume(vol);
+      playback.setVolume(vol);
       currentSettings.pianoVolume = vol;
     });
     pianoVolSlider.addEventListener('change', () => {
@@ -850,42 +408,57 @@ export function setupPianoStudioUI(deps) {
   }
 
   if (loopCheck) {
-    loopCheck.addEventListener('change', () => {
-      midiEngine.isLooping = loopCheck.checked;
-      xmlEngine.isLooping = loopCheck.checked;
-    });
+    loopCheck.addEventListener('change', () => playback.setLoop(loopCheck.checked));
   }
-
   if (sustainCheck) {
-    sustainCheck.addEventListener('change', () => {
-      pianoAudio.setSustain(sustainCheck.checked);
+    sustainCheck.addEventListener('change', () => playback.setSustain(sustainCheck.checked));
+  }
+
+  if (rangeSelect) {
+    rangeSelect.addEventListener('change', () => {
+      currentSettings.pianoRangeMode = rangeSelect.value;
+      rangeManager.calculateRange(rangeSelect.value, playback.activeMode === 'midi' ? midiEngine.notes : xmlEngine.playableNotes);
+      if (saveSettingsFile) saveSettingsFile();
     });
   }
 
-  // 10. Initial Boot & Restore Saved File
-  const savedRangeMode = currentSettings.pianoRangeMode || 'autofit';
-  if (rangeSelect) rangeSelect.value = savedRangeMode;
-  applyRangeMode(savedRangeMode);
+  if (presetSelect) {
+    presetSelect.addEventListener('change', () => loadPreset(presetSelect.value));
+  }
 
-  const savedVolume = currentSettings.pianoVolume !== undefined ? currentSettings.pianoVolume : 0.85;
-  if (pianoVolSlider) pianoVolSlider.value = savedVolume;
-  if (pianoVolLabel) pianoVolLabel.innerText = `${Math.round(savedVolume * 100)}%`;
-  pianoAudio.setVolume(savedVolume);
+  if (modeMidiBtn) modeMidiBtn.addEventListener('click', () => setMode('midi', true));
+  if (modeXmlBtn) modeXmlBtn.addEventListener('click', () => setMode('xml', true));
 
-  updatePresetDropdown();
+  if (btnOctaveBass) btnOctaveBass.addEventListener('click', () => rangeManager.scrollToNote(36));
+  if (btnOctaveMid) btnOctaveMid.addEventListener('click', () => rangeManager.scrollToNote(60));
+  if (btnOctaveTreble) btnOctaveTreble.addEventListener('click', () => rangeManager.scrollToNote(84));
+  if (btnOctaveLeft) btnOctaveLeft.addEventListener('click', () => rangeManager.scrollByOffset(-160));
+  if (btnOctaveRight) btnOctaveRight.addEventListener('click', () => rangeManager.scrollByOffset(160));
+
+  // 7. EventBus & Registry Listeners
+  if (registry) {
+    registry.subscribe(() => renderSongGrid());
+  }
+  eventBus.on('audio:*', () => renderSongGrid());
+  eventBus.on('instrument:selected', (inst) => {
+    if (inst === 'piano' || inst === 'sheet') {
+      setMode(inst === 'piano' ? 'midi' : 'xml', false);
+    }
+  });
+
+  // 8. Initial Boot
+  const initRange = currentSettings.pianoRangeMode || 'autofit';
+  if (rangeSelect) rangeSelect.value = initRange;
+  rangeManager.calculateRange(initRange);
 
   if (currentSettings.activeMusicFile) {
-    const filePath = findMusicFile(currentSettings.activeMusicFile);
-    if (filePath) {
-      loadHostedFile(currentSettings.activeMusicFile);
-    } else {
-      setMode(currentSettings.pianoActiveMode || 'midi');
-    }
+    loadHostedFile(currentSettings.activeMusicFile);
+  } else if (currentSettings.activePresetKey) {
+    loadPreset(currentSettings.activePresetKey);
   } else {
     setMode(currentSettings.pianoActiveMode || 'midi');
   }
 
-  setTimeout(() => scrollToNote(60), 150);
+  renderSongGrid();
+  setTimeout(() => rangeManager.scrollToNote(60), 150);
 }
-
-

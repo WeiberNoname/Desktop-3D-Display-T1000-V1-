@@ -26,6 +26,7 @@ import {
 } from './src/ui/PreviewGenerator.js';
 import { setupStudioTabs as setupStudioTabsUtil } from './src/ui/StudioTabManager.js';
 import { setupAssetHubUI } from './src/ui/AssetHubUI.js';
+import { setupAtmosphereTabUI } from './src/ui/AtmosphereTabUI.js';
 import { setupSoundTabUI } from './src/ui/SoundTabUI.js';
 import { setupTextureTabUI } from './src/ui/TextureTabUI.js';
 import { setupAIDirectorTabUI } from './src/ui/AIDirectorTabUI.js';
@@ -510,6 +511,14 @@ function setupSettingsUI() {
         if (soundTabBtn) soundTabBtn.click();
       }
     }
+  });
+  setupAtmosphereTabUI({
+    currentSettings,
+    saveSettingsFile,
+    t,
+    showSpeechBubble,
+    sakuraRainManager,
+    snowFallManager
   });
   setupSoundTabUI({
     currentSettings,

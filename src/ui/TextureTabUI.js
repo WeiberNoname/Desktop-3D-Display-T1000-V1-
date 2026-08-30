@@ -38,14 +38,14 @@ export function setupTextureTabUI(deps) {
     const innerModel = typeof getInnerModelGroup === 'function' ? getInnerModelGroup() : null;
     if (!innerModel) return;
 
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(textureUrl, (loadedTex) => {
-      loadedTex.wrapS = THREE.RepeatWrapping;
-      loadedTex.wrapT = THREE.RepeatWrapping;
-      loadedTex.repeat.set(currentSettings.textureRepeatX || 1.0, currentSettings.textureRepeatY || 1.0);
+    // 1. If active model is the Waving Flag Cloth mesh
+    if (innerModel.userData && innerModel.userData.flagClothMesh) {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(textureUrl, (loadedTex) => {
+        loadedTex.wrapS = THREE.RepeatWrapping;
+        loadedTex.wrapT = THREE.RepeatWrapping;
+        loadedTex.repeat.set(currentSettings.textureRepeatX || 1.0, currentSettings.textureRepeatY || 1.0);
 
-      // If active model is flag mesh
-      if (innerModel.userData && innerModel.userData.flagClothMesh) {
         const mat = innerModel.userData.flagClothMesh.material;
         if (mat) {
           mat.map = loadedTex;
@@ -53,15 +53,40 @@ export function setupTextureTabUI(deps) {
           mat.metalness = currentSettings.textureMetalness !== undefined ? currentSettings.textureMetalness : 0.05;
           mat.needsUpdate = true;
         }
-      } else {
-        // Fallback: Apply to main child mesh if procedural
-        innerModel.traverse((child) => {
-          if (child.isMesh && child.material && !child.name.includes('Eye')) {
-            child.material.map = loadedTex;
-            child.material.needsUpdate = true;
-          }
-        });
-      }
+      });
+      return;
+    }
+
+    // 2. If active model is a 3D mascot and user selected 'model_default', restore native materials!
+    if (currentSettings.flagPreset === 'model_default' || !textureUrl) {
+      innerModel.traverse((child) => {
+        if (child.isMesh && child.userData.originalMaterial) {
+          child.material = Array.isArray(child.userData.originalMaterial)
+            ? child.userData.originalMaterial.map(m => m.clone())
+            : child.userData.originalMaterial.clone();
+          child.material.needsUpdate = true;
+        }
+      });
+      return;
+    }
+
+    // 3. If user explicitly applies an image to a procedural/custom mascot
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(textureUrl, (loadedTex) => {
+      loadedTex.flipY = false;
+      loadedTex.wrapS = THREE.RepeatWrapping;
+      loadedTex.wrapT = THREE.RepeatWrapping;
+      loadedTex.repeat.set(currentSettings.textureRepeatX || 1.0, currentSettings.textureRepeatY || 1.0);
+
+      innerModel.traverse((child) => {
+        if (child.isMesh && child.material && !child.name.toLowerCase().includes('eye')) {
+          const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+          mat.map = loadedTex;
+          mat.roughness = currentSettings.textureRoughness !== undefined ? currentSettings.textureRoughness : 0.50;
+          mat.metalness = currentSettings.textureMetalness !== undefined ? currentSettings.textureMetalness : 0.05;
+          mat.needsUpdate = true;
+        }
+      });
     });
   };
 
@@ -156,19 +181,59 @@ export function setupTextureTabUI(deps) {
   const registry = window.__assetRegistryManager || (typeof AssetRegistryManager !== 'undefined' ? AssetRegistryManager.getInstance() : null);
 
   const builtInPresets = [
-    { id: 'default', name: t('preset_default', 'Royal Tricolor'), icon: '🦁', type: 'preset' },
-    { id: 'world', name: t('preset_world', 'World Globe'), icon: '🌐', type: 'preset' },
+    { id: 'eclipse', name: t('preset_eclipse', 'Solar Eclipse'), icon: '🌑', type: 'preset' },
+    { id: 'prism', name: t('preset_prism', 'Geometric Prism'), icon: '📐', type: 'preset' },
+    { id: 'zen', name: t('preset_zen', 'Zen Harmony'), icon: '☯️', type: 'preset' },
     { id: 'cyber', name: t('preset_cyber', 'Cyber Neon'), icon: '⚡', type: 'preset' },
-    { id: 'star', name: t('preset_star', 'Royal Star'), icon: '⭐', type: 'preset' },
-    { id: 'rainbow', name: t('preset_rainbow', 'Pride Rainbow'), icon: '🌈', type: 'preset' }
+    { id: 'dragon', name: t('preset_dragon', 'Mythic Dragon'), icon: '🐉', type: 'preset' },
+    { id: 'galaxy', name: t('preset_galaxy', 'Cosmic Nebula'), icon: '🌌', type: 'preset' },
+    { id: 'sakura', name: t('preset_sakura', 'Sakura Blossom'), icon: '🌸', type: 'preset' },
+    { id: 'aurora', name: t('preset_aurora', 'Nordic Aurora'), icon: '❄️', type: 'preset' },
+    { id: 'ocean', name: t('preset_ocean', 'Abyssal Wave'), icon: '🌊', type: 'preset' }
   ];
+
+  const getModelEmbeddedTexture = () => {
+    if (window.__activeModelDefaultTextureUrl) return window.__activeModelDefaultTextureUrl;
+    const innerModel = typeof getInnerModelGroup === 'function' ? getInnerModelGroup() : null;
+    if (!innerModel) return null;
+    let foundTexUrl = null;
+    innerModel.traverse((child) => {
+      if (!foundTexUrl && child.isMesh && child.material && !child.name.includes('Eye') && child.name !== 'WavingFlagCloth') {
+        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+        if (mat && mat.map && mat.map.image) {
+          const img = mat.map.image;
+          try {
+            if (typeof document !== 'undefined' && (img.width || img.naturalWidth)) {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width || img.naturalWidth || 512;
+              canvas.height = img.height || img.naturalHeight || 512;
+              const ctx2d = canvas.getContext('2d');
+              ctx2d.drawImage(img, 0, 0, canvas.width, canvas.height);
+              foundTexUrl = canvas.toDataURL('image/png');
+              window.__activeModelDefaultTextureUrl = foundTexUrl;
+            }
+          } catch (e) {}
+        }
+      }
+    });
+    return foundTexUrl;
+  };
 
   const renderTextureGrid = () => {
     if (!textureGrid) return;
     textureGrid.innerHTML = '';
 
+    const modelTexUrl = getModelEmbeddedTexture();
+    const modelPreset = modelTexUrl ? [{
+      id: 'model_default',
+      name: t('preset_model_default', 'Model Original Skin'),
+      icon: '🎨',
+      type: 'model_texture',
+      objectUrl: modelTexUrl
+    }] : [];
+
     const customAssets = registry ? registry.getAssets('texture') : [];
-    const allItems = [...builtInPresets, ...customAssets];
+    const allItems = [...modelPreset, ...builtInPresets, ...customAssets];
 
     if (countBadge) {
       countBadge.textContent = `${allItems.length} Styles`;
@@ -177,19 +242,24 @@ export function setupTextureTabUI(deps) {
     allItems.forEach(item => {
       const card = document.createElement('div');
       const isPreset = item.type === 'preset';
+      const isModelTex = item.type === 'model_texture';
       const texUrl = isPreset ? createPresetFlagTexture(item.id) : item.objectUrl;
-      const isSelected = isPreset ? (currentSettings.flagPreset === item.id && !currentSettings.customTexturePath) : (currentSettings.customTexturePath === item.objectUrl);
+      const isSelected = isPreset
+        ? (currentSettings.flagPreset === item.id && !currentSettings.customTexturePath)
+        : (currentSettings.customTexturePath === item.objectUrl || (isModelTex && currentSettings.flagPreset === 'model_default'));
 
       card.className = `studio-select-card ${isSelected ? 'selected' : ''}`;
       card.setAttribute('data-id', item.id);
 
-      const defaultSub = isPreset ? 'Built-in Flag' : ('Imported • ' + (item.sizeFormatted || 'Texture'));
+      const defaultSub = isModelTex
+        ? 'Active Model Skin'
+        : (isPreset ? 'Built-in Flag' : ('Imported • ' + (item.sizeFormatted || 'Texture')));
 
       card.innerHTML = `
         <div class="studio-select-thumb asset-thumbnail-wrapper">
           <img src="${texUrl}" class="asset-thumbnail-img" alt="${item.name}">
         </div>
-        <div class="studio-select-label asset-card-label" title="${item.name}">${isPreset ? item.icon + ' ' + item.name : item.name}</div>
+        <div class="studio-select-label asset-card-label" title="${item.name}">${isPreset || isModelTex ? item.icon + ' ' + item.name : item.name}</div>
         <div class="studio-select-sub asset-card-sub">${isSelected ? '🟢 Active' : defaultSub}</div>
       `;
 
@@ -200,14 +270,20 @@ export function setupTextureTabUI(deps) {
           const cId = c.getAttribute('data-id');
           const cItem = allItems.find(it => it.id === cId);
           if (cSub && cItem) {
-            cSub.textContent = cItem.type === 'preset' ? 'Built-in Flag' : ('Imported • ' + (cItem.sizeFormatted || 'Texture'));
+            cSub.textContent = cItem.type === 'model_texture'
+              ? 'Active Model Skin'
+              : (cItem.type === 'preset' ? 'Built-in Flag' : ('Imported • ' + (cItem.sizeFormatted || 'Texture')));
           }
         });
         card.classList.add('selected');
         const activeSub = card.querySelector('.studio-select-sub');
         if (activeSub) activeSub.textContent = '🟢 Active';
 
-        if (isPreset) {
+        if (isModelTex) {
+          currentSettings.customTexturePath = item.objectUrl;
+          currentSettings.flagPreset = 'model_default';
+          if (filenameLabel) filenameLabel.innerText = item.name;
+        } else if (isPreset) {
           currentSettings.customTexturePath = '';
           currentSettings.flagPreset = item.id;
           if (filenameLabel) filenameLabel.innerText = `Preset: ${item.id}`;

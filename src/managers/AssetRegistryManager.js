@@ -1,7 +1,10 @@
 /**
- * AssetRegistryManager (<120 lines)
- * Central registry for managing user-imported 3D models, textures, and audio/sheet music assets.
+ * AssetRegistryManager
+ * Central reactive registry for managing user-imported 3D models, textures, and audio assets.
+ * Backed by EventBus for decoupled real-time synchronization.
  */
+
+import { eventBus } from './EventBus.js';
 
 export class AssetRegistryManager {
   constructor() {
@@ -10,10 +13,13 @@ export class AssetRegistryManager {
   }
 
   static getInstance() {
-    if (!window.__assetRegistryManager) {
-      window.__assetRegistryManager = new AssetRegistryManager();
+    if (!AssetRegistryManager._instance) {
+      AssetRegistryManager._instance = new AssetRegistryManager();
     }
-    return window.__assetRegistryManager;
+    if (typeof window !== 'undefined') {
+      window.__assetRegistryManager = AssetRegistryManager._instance;
+    }
+    return AssetRegistryManager._instance;
   }
 
   detectFileType(file) {
@@ -62,12 +68,29 @@ export class AssetRegistryManager {
       objectUrl,
       file,
       buffer,
+      thumbnailUrl: null,
       timestamp: Date.now()
     };
 
     this.assets.unshift(assetItem);
     this.notify();
+
+    // Broadcast across EventBus
+    eventBus.emit('asset:registered', assetItem);
+    eventBus.emit('assets:changed', this.assets);
+
     return assetItem;
+  }
+
+  setAssetThumbnail(id, thumbnailUrl) {
+    const asset = this.getAssetById(id);
+    if (asset) {
+      asset.thumbnailUrl = thumbnailUrl;
+      eventBus.emit('asset:thumbnailUpdated', { id, asset, thumbnailUrl });
+      this.notify();
+      return true;
+    }
+    return false;
   }
 
   getAssets(filterType = 'all') {
@@ -78,7 +101,7 @@ export class AssetRegistryManager {
   }
 
   getAssetById(id) {
-    return this.assets.find(a => a.id === id) || null;
+    return this.assets.find(a => a.id === id || a.name === id) || null;
   }
 
   removeAsset(id) {
@@ -89,6 +112,9 @@ export class AssetRegistryManager {
         URL.revokeObjectURL(removed.objectUrl);
       }
       this.notify();
+
+      eventBus.emit('asset:removed', { id, asset: removed });
+      eventBus.emit('assets:changed', this.assets);
       return true;
     }
     return false;
