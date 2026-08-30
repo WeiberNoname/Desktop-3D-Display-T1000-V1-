@@ -7,6 +7,7 @@
 import { setupDiagnosticsUI } from './SettingsDiagnosticsUI.js';
 import { setupSettingsPanelResize } from './SettingsPanelResizeHandler.js';
 import { soundManager } from '../core/SoundManager.js';
+import { setSelectedSpotlightIndex } from './SpotlightCardsUI.js';
 
 export function setupSettingsUI(deps) {
   const {
@@ -103,6 +104,7 @@ export function setupSettingsUI(deps) {
         intensity: 2.0,
         color: nextColor
       });
+      setSelectedSpotlightIndex(currentSettings.spotlights.length - 1);
       if (renderSpotlightCardsUI) renderSpotlightCardsUI();
       if (updateSpotlightPosition) updateSpotlightPosition();
       if (saveSettingsFile) saveSettingsFile();

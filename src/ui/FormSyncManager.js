@@ -77,7 +77,9 @@ export function createFormSyncManager(deps) {
       currentSettings,
       addSpotlightBtn,
       updateSpotlightPosition,
+      updateStageLighting,
       saveSettingsFile,
+      showSpeechBubble: deps.showSpeechBubble,
       t
     });
   };

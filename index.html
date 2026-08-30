@@ -231,39 +231,23 @@
             <span id="asset-count-badge" class="studio-badge studio-badge-amber">0 Assets</span>
           </div>
 
-          <!-- Category Filter Bar -->
-          <div class="asset-filter-bar">
-            <button class="asset-filter-btn active" data-filter="all" data-i18n="asset_filter_all">All</button>
-            <button class="asset-filter-btn" data-filter="model" data-i18n="asset_filter_models">🧊 3D Models</button>
-            <button class="asset-filter-btn" data-filter="texture" data-i18n="asset_filter_textures">🖼️ Textures</button>
-            <button class="asset-filter-btn" data-filter="audio" data-i18n="asset_filter_audio">🎼 Music & MIDI</button>
-          </div>
-
           <!-- Dynamic Asset Library Grid -->
           <div id="asset-library-grid" class="asset-library-grid"></div>
         </div>
       </div>
 
-      <!-- Tab 3: Display & Model -->
+      <!-- Tab 3: Display & Mascot -->
       <div id="tab-display" class="studio-tab-content">
+        <!-- Single Unified Mascot Selection Card -->
         <div class="studio-card">
           <div class="studio-card-header">
             <span class="studio-card-title" data-i18n="active_mascot">🎯 Mascot & Model Library</span>
             <span id="mascot-count-badge" class="studio-badge studio-badge-amber">2 Mascots</span>
           </div>
 
-          <!-- Active Mascot Preview Container (Standardized) -->
-          <div class="texture-preview-container" style="margin-top: 4px;">
-            <img id="mascot-active-preview-img" class="texture-preview-thumbnail" alt="Mascot Preview" src="">
-            <div class="texture-info">
-              <div id="mascot-active-name" class="texture-info-title">Default Bunny 🐰</div>
-              <div class="texture-info-sub" data-i18n="mascot_active_applied">Active 3D Mascot Applied</div>
-            </div>
-          </div>
-
-          <!-- Mascot Selection Grid (Standardized) -->
+          <!-- Mascot Selection Grid (One Clean Unified Asset Area) -->
           <input type="hidden" id="model-select" value="procedural">
-          <div id="model-select-grid" class="studio-select-grid" style="margin-top: 8px;"></div>
+          <div id="model-select-grid" class="studio-select-grid" style="margin-top: 6px;"></div>
         </div>
 
         <!-- Mascot Animation Controls Card -->
@@ -331,18 +315,13 @@
               <span class="studio-unit-suffix">x</span>
             </div>
           </div>
-
-          <div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button id="btn-dark-stage" class="studio-btn-ghost" style="flex: 1;" data-i18n="dark_stage_preset">🎭 Dark Stage Mode</button>
-            <button id="btn-dual-concert" class="studio-btn-ghost" style="flex: 1; color: #f39c12; border-color: rgba(243,156,18,0.4);" data-i18n="dual_concert_preset">🎸 Dual Concert</button>
-          </div>
         </div>
 
-        <!-- Spotlight Sources Container Card -->
+        <!-- Spotlight Sources & Presets Container Card -->
         <div class="studio-card">
           <div class="studio-card-header">
-            <span class="studio-card-title" data-i18n="spotlight_section">🔦 Stage Spotlight Sources</span>
-            <button id="add-spotlight-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.4);" data-i18n="add_spotlight">➕ Add Source</button>
+            <span class="studio-card-title" data-i18n="spotlight_section">🔦 Stage Lighting & Presets</span>
+            <button id="add-spotlight-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em; color: #38bdf8; border-color: rgba(56,189,248,0.4);" data-i18n="add_spotlight">➕ Add Light</button>
           </div>
 
           <div id="spotlight-cards-container"></div>
@@ -353,28 +332,18 @@
       <div id="tab-texture" class="studio-tab-content">
         <div class="studio-card">
           <div class="studio-card-header">
-            <span class="studio-card-title" data-i18n="texture_title">🎨 Custom Texture & Flag Cloth</span>
-            <button id="texture-reset-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 9.5px;" data-i18n="texture_reset_btn">🔄 Reset</button>
+            <span class="studio-card-title" data-i18n="texture_presets_title">🎨 Flag Styles & Textures</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span id="texture-count-badge" class="studio-badge studio-badge-amber">5 Presets</span>
+              <button id="texture-reset-btn" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 9.5px;" data-i18n="texture_reset_btn">🔄 Reset</button>
+            </div>
           </div>
 
           <!-- Hidden File Input for Image Loading Compatibility -->
           <input type="file" id="texture-file-input" accept="image/*" style="display: none;">
 
-          <!-- Active Texture Preview Container -->
-          <div class="texture-preview-container" style="margin-top: 4px;">
-            <img id="texture-preview-img" class="texture-preview-thumbnail" alt="Texture Preview" src="">
-            <div class="texture-info">
-              <div id="texture-filename" class="texture-info-title">Preset: default</div>
-              <div class="texture-info-sub" data-i18n="texture_active_applied">Active Texture Applied to Mesh</div>
-            </div>
-          </div>
-
-          <!-- Flag Styles & Custom Texture Selection Grid -->
-          <div class="studio-card-header" style="margin-top: 10px;">
-            <span class="studio-card-title" data-i18n="texture_presets_title">🏳️ Flag Styles & Textures</span>
-            <span id="texture-count-badge" class="studio-badge studio-badge-amber">5 Presets</span>
-          </div>
-          <div id="texture-select-grid" class="studio-select-grid" style="max-height: 200px;"></div>
+          <!-- Flag Styles & Custom Texture Selection Grid (Standardized Asset Area) -->
+          <div id="texture-select-grid" class="studio-select-grid" style="margin-top: 6px; max-height: 220px;"></div>
 
           <!-- Real-Time Cloth Wave & Wind -->
           <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
@@ -474,80 +443,73 @@
             </div>
           </div>
 
-          <!-- Track 1: Snow Atmosphere -->
-          <div id="sound-card-snow" class="studio-row sound-track-strip" style="align-items: center;">
-            <div class="studio-row-label">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 1.1em;">❄️</span>
-                <div>
-                  <div class="studio-row-title" data-i18n="sound_snow_title">Snow Atmosphere</div>
-                  <div class="studio-row-sub" style="display: flex; align-items: center; gap: 6px;">
-                    <label for="snow-fall" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                      <input type="checkbox" id="snow-fall" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
-                      <span data-i18n="snow_fall">Snow FX</span>
-                    </label>
-                    <label for="sound-snow-sync" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                      <input type="checkbox" id="sound-snow-sync" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
-                      <span data-i18n="sound_snow_sync">Auto-sync</span>
-                    </label>
-                  </div>
-                </div>
+          <!-- Standardized Sound Synth Asset Holder Grid (Pure Selectable Cards) -->
+          <div id="sound-synth-grid" class="studio-select-grid" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); margin-top: 6px;">
+            <!-- Track 1: Snow Wind -->
+            <div id="sound-card-snow" class="studio-select-card sound-synth-card selected" data-track="snow">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(56, 189, 248, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #38bdf8);">❄️</div>
+                <span id="badge-sound-snow" class="asset-ext-badge" style="color: #38bdf8; border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.15); margin-top: 4px;">.SYNTH</span>
               </div>
+              <div class="studio-select-label asset-card-label" data-i18n="sound_snow_title">❄️ Snow Wind</div>
+              <div id="sub-sound-snow" class="studio-select-sub asset-card-sub">Winter Ambience</div>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <button id="btn-sound-snow-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
-              <div class="studio-number-wrapper">
-                <input type="number" id="sound-snow-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.70">
-                <span class="studio-unit-suffix">vol</span>
+
+            <!-- Track 2: Sakura Melody -->
+            <div id="sound-card-sakura" class="studio-select-card sound-synth-card" data-track="sakura">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(244, 114, 182, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #f472b6);">🌸</div>
+                <span id="badge-sound-sakura" class="asset-ext-badge" style="color: #f472b6; border-color: rgba(244,114,182,0.4); background: rgba(244,114,182,0.15); margin-top: 4px;">.SYNTH</span>
               </div>
+              <div class="studio-select-label asset-card-label" data-i18n="sound_sakura_title">🌸 Sakura Melody</div>
+              <div id="sub-sound-sakura" class="studio-select-sub asset-card-sub">Spring Bells</div>
+            </div>
+
+            <!-- Track 3: Lo-Fi Drum -->
+            <div id="sound-card-drum" class="studio-select-card sound-synth-card" data-track="drum">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(245, 158, 11, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #fbbf24);">🥁</div>
+                <span id="badge-sound-drum" class="asset-ext-badge" style="color: #fbbf24; border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.15); margin-top: 4px;">.SYNTH</span>
+              </div>
+              <div class="studio-select-label asset-card-label" data-i18n="sound_drum_title">🥁 Lo-Fi Drum</div>
+              <div id="sub-sound-drum" class="studio-select-sub asset-card-sub">Rhythm Beat</div>
             </div>
           </div>
 
-          <!-- Track 2: Sakura Spring Melody -->
-          <div id="sound-card-sakura" class="studio-row sound-track-strip" style="align-items: center;">
-            <div class="studio-row-label">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 1.1em;">🌸</span>
-                <div>
-                  <div class="studio-row-title" data-i18n="sound_sakura_title">Sakura Spring Melody</div>
-                  <div class="studio-row-sub" style="display: flex; align-items: center; gap: 6px;">
-                    <label for="sakura-rain" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                      <input type="checkbox" id="sakura-rain" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
-                      <span data-i18n="sakura_rain">Sakura FX</span>
-                    </label>
-                    <label for="sound-sakura-sync" style="font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                      <input type="checkbox" id="sound-sakura-sync" checked style="accent-color: #e67e22; width: 12px; height: 12px; cursor: pointer;">
-                      <span data-i18n="sound_sakura_sync">Auto-sync</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+          <!-- Reusable Shared Selected Track Controls -->
+          <div id="sound-track-editor" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12);">
+            <div class="studio-card-header" style="margin-bottom: 6px;">
+              <span id="sound-editor-title" class="studio-card-title" style="font-size: 0.92em; color: #38bdf8;">❄️ Selected Track: Snow Wind</span>
+              <button id="btn-sound-active-play" class="studio-btn-primary" style="padding: 2px 10px; font-size: 0.85em;" data-i18n="sound_play">▶ Play</button>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <button id="btn-sound-sakura-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
-              <div class="studio-number-wrapper">
-                <input type="number" id="sound-sakura-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.65">
-                <span class="studio-unit-suffix">vol</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Track 3: Simple Drum Melody -->
-          <div id="sound-card-drum" class="studio-row sound-track-strip" style="align-items: center;">
-            <div class="studio-row-label">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 1.1em;">🥁</span>
-                <div>
-                  <div class="studio-row-title" data-i18n="sound_drum_title">Simple Drum Melody</div>
-                  <span class="studio-row-sub">Lo-fi rhythm synthesizer beat</span>
-                </div>
+            <div class="studio-row">
+              <div class="studio-row-label">
+                <label for="sound-active-vol" class="studio-row-title">Track Volume</label>
+                <span class="studio-row-sub">Channel gain multiplier</span>
+              </div>
+              <div class="studio-number-wrapper">
+                <input type="number" id="sound-active-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.70">
+                <span class="studio-unit-suffix">vol</span>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <button id="btn-sound-drum-play" class="studio-btn-ghost" style="padding: 3px 8px; font-size: 0.85em; color: #f39c12; border-color: rgba(243,156,18,0.35);" data-i18n="sound_play">▶ Play</button>
-              <div class="studio-number-wrapper">
-                <input type="number" id="sound-drum-vol" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.75">
-                <span class="studio-unit-suffix">vol</span>
+
+            <div id="sound-active-options" class="studio-row" style="align-items: center;">
+              <div class="studio-row-label">
+                <span class="studio-row-title">Atmosphere Sync & FX</span>
+                <span class="studio-row-sub">Weather coupling & visual particles</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="snow-fall" style="display: none;" checked>
+                <input type="checkbox" id="sakura-rain" style="display: none;" checked>
+                <label id="label-sound-active-fx" style="cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 0.82em; color: #d1d5db;">
+                  <input type="checkbox" id="sound-active-fx" checked style="accent-color: #38bdf8; width: 12px; height: 12px; cursor: pointer;">
+                  <span>Particles FX</span>
+                </label>
+                <label id="label-sound-active-sync" style="cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 0.82em; color: #d1d5db;">
+                  <input type="checkbox" id="sound-active-sync" checked style="accent-color: #38bdf8; width: 12px; height: 12px; cursor: pointer;">
+                  <span>Auto-sync</span>
+                </label>
               </div>
             </div>
           </div>

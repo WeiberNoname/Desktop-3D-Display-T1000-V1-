@@ -813,3 +813,114 @@ once the app is packaged.
 [2026-08-29T15:55:18.864Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
 [2026-08-29T15:55:19.456Z] [Renderer Console] Active mascot is procedural bunny.
 [2026-08-29T15:55:20.043Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings
+[2026-08-30T00:55:40.378Z] === Application Session Started ===
+[2026-08-30T00:55:40.381Z] Developer Mode active: false
+[2026-08-30T00:55:40.381Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T00:55:40.389Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T00:55:41.208Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T00:55:41.210Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:06:36.027Z] === Application Session Started ===
+[2026-08-30T01:06:36.030Z] Developer Mode active: false
+[2026-08-30T01:06:36.030Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:06:36.038Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:06:36.189Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:06:36.190Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:06:36.865Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:06:37.301Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:06:37.966Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:06:38.130Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings
+[2026-08-30T01:24:07.589Z] === Application Session Started ===
+[2026-08-30T01:24:07.591Z] Developer Mode active: false
+[2026-08-30T01:24:07.592Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:24:07.836Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:24:07.982Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:24:07.983Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:24:08.533Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:24:08.552Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:24:08.846Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:24:09.437Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings
+[2026-08-30T01:28:50.496Z] === Application Session Started ===
+[2026-08-30T01:28:50.498Z] Developer Mode active: false
+[2026-08-30T01:28:50.499Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:28:50.505Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:28:50.597Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:28:50.598Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:28:51.573Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:28:52.056Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:28:52.261Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:28:52.433Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings
+[2026-08-30T01:31:46.246Z] === Application Session Started ===
+[2026-08-30T01:31:46.249Z] Developer Mode active: false
+[2026-08-30T01:31:46.250Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:31:46.256Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:31:46.691Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:31:46.694Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:31:47.894Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:31:48.333Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:31:48.539Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:31:48.772Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings
+[2026-08-30T01:35:15.136Z] === Application Session Started ===
+[2026-08-30T01:35:15.139Z] Developer Mode active: false
+[2026-08-30T01:35:15.140Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:35:15.146Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:35:15.378Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:35:15.379Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:35:16.208Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:35:16.224Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:35:17.282Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:35:17.288Z] [Renderer Console] Sound state change callback error: TypeError: soundManager.isSnowPlaying is not a function
+[2026-08-30T01:35:17.426Z] [Renderer Console] Sound state change callback error: TypeError: soundManager.isSnowPlaying is not a function
+[2026-08-30T01:35:17.430Z] [Renderer Console] Sound state change callback error: TypeError: soundManager.isSnowPlaying is not a function
+[2026-08-30T01:35:17.432Z] [Renderer Console] Uncaught (in promise) TypeError: soundManager.isSnowPlaying is not a function
+[2026-08-30T01:35:45.586Z] === Application Session Started ===
+[2026-08-30T01:35:45.589Z] Developer Mode active: false
+[2026-08-30T01:35:45.590Z] Loading Steamworks module @skyatnpm/steamworks-js...
+[2026-08-30T01:35:45.597Z] Steamworks module loaded successfully. Initializing against App ID 480...
+[2026-08-30T01:35:45.750Z] Steamworks API initialized successfully. Active user: spaceweiber
+[2026-08-30T01:35:45.752Z] [Steam Startup] Force-wiped AppID 480 testing stats on Steam Cloud.
+[2026-08-30T01:35:46.313Z] [Renderer Console] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[2026-08-30T01:35:46.330Z] [Renderer Console] [i18n] i18next initialized successfully with active language: en
+[2026-08-30T01:35:47.484Z] [Renderer Console] Active mascot is procedural bunny.
+[2026-08-30T01:35:47.687Z] [Renderer Console] Saved settings atomically to file: C:\Users\space\.gemini\antigravity-ide\scratch\Desktop-3D-Display-T02 V4\assets\settings

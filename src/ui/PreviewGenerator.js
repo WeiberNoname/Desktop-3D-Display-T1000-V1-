@@ -12,28 +12,37 @@ import { ModelThumbnailGenerator } from '../core/ModelThumbnailGenerator.js';
 export const DEFAULT_FALLBACK_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1c1c22"/>
-      <stop offset="100%" stop-color="#0e0e12"/>
+    <linearGradient id="blueBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141c2e"/>
+      <stop offset="100%" stop-color="#0a0f1d"/>
     </linearGradient>
-    <linearGradient id="triGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
+    <linearGradient id="cubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2.5" result="blur" />
+    <linearGradient id="cubeLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="cubeRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
-  <rect width="120" height="120" rx="8" fill="url(#bgGrad)"/>
-  <rect width="118" height="118" x="1" y="1" rx="7" fill="none" stroke="rgba(251,191,36,0.18)" stroke-width="1"/>
-  <path d="M 60 18 L 100 86 C 101.5 88.5 99.8 92 96.8 92 L 23.2 92 C 20.2 92 18.5 88.5 20 86 Z" 
-        fill="rgba(245, 158, 11, 0.08)" 
-        stroke="url(#triGrad)" 
-        stroke-width="2.5" 
-        stroke-linejoin="round"/>
-  <circle cx="60" cy="52" r="3.5" fill="#f59e0b" filter="url(#glow)"/>
-  <line x1="60" y1="62" x2="60" y2="76" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+  <rect width="120" height="120" rx="8" fill="url(#blueBg)"/>
+  <rect width="118" height="118" x="1" y="1" rx="7" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1"/>
+  <g filter="url(#blueGlow)" transform="translate(60, 60)">
+    <polygon points="0,-30 26,-15 0,0 -26,-15" fill="url(#cubeTop)" stroke="#93c5fd" stroke-width="1.2"/>
+    <polygon points="-26,-15 0,0 0,30 -26,15" fill="url(#cubeLeft)" stroke="#3b82f6" stroke-width="1.2"/>
+    <polygon points="0,0 26,-15 26,15 0,30" fill="url(#cubeRight)" stroke="#60a5fa" stroke-width="1.2"/>
+    <line x1="0" y1="0" x2="0" y2="30" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+    <line x1="0" y1="0" x2="-26" y2="-15" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+    <line x1="0" y1="0" x2="26" y2="-15" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  </g>
 </svg>
 `.trim());
 
@@ -109,36 +118,9 @@ export function populateModelDropdown(ctx) {
     countBadge.textContent = `${options.length} Mascots`;
   }
 
-  const activePreviewImg = document.getElementById('mascot-active-preview-img');
-  const activeNameLabel = document.getElementById('mascot-active-name');
-
-  const updateActiveBanner = (activeKey) => {
-    let nameText = activeKey;
-    if (activeKey === 'procedural') nameText = (typeof t === 'function') ? t('default_mascot', 'Default Bunny 🐰') : 'Default Bunny 🐰';
-    else if (activeKey === 'flag') nameText = (typeof t === 'function') ? t('model_flag', 'Country Flag 🎌') : 'Country Flag 🎌';
-    else nameText = activeKey.replace(/\.(glb|gltf|fbx|obj)$/i, '');
-
-    if (activeNameLabel) activeNameLabel.textContent = nameText;
-
-    const matchingAsset = customModelAssets.find(a => a.name === activeKey);
-    if (activePreviewImg) {
-      if (matchingAsset && matchingAsset.thumbnailUrl) {
-        activePreviewImg.src = matchingAsset.thumbnailUrl;
-      } else {
-        const previewPath = path.join(assetsDir, '.previews', `${activeKey}.png`);
-        if (fs.existsSync(previewPath)) {
-          activePreviewImg.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
-        } else {
-          activePreviewImg.src = DEFAULT_FALLBACK_ICON;
-        }
-      }
-    }
-  };
-  updateActiveBanner(currentSettings.activeModel || 'procedural');
-
   options.forEach(modelKey => {
     const card = document.createElement('div');
-    const isSelected = currentSettings.activeModel === modelKey;
+    const isSelected = (currentSettings.activeModel || 'procedural') === modelKey;
     card.className = `studio-select-card mascot-card ${isSelected ? 'selected' : ''}`;
     card.setAttribute('data-id', modelKey);
 
@@ -168,9 +150,6 @@ export function populateModelDropdown(ctx) {
           if (dataUrl) {
             matchingAsset.thumbnailUrl = dataUrl;
             img.src = dataUrl;
-            if (currentSettings.activeModel === modelKey && activePreviewImg) {
-              activePreviewImg.src = dataUrl;
-            }
           }
         });
       }
@@ -194,7 +173,7 @@ export function populateModelDropdown(ctx) {
 
     const sub = document.createElement('div');
     sub.className = 'studio-select-sub asset-card-sub';
-    sub.textContent = subText;
+    sub.textContent = isSelected ? '🟢 Active' : subText;
 
     card.appendChild(thumbWrapper);
     card.appendChild(label);
@@ -202,10 +181,22 @@ export function populateModelDropdown(ctx) {
 
     card.addEventListener('click', () => {
       if (currentSettings.activeModel === modelKey) return;
-      gridContainer.querySelectorAll('.studio-select-card').forEach(c => c.classList.remove('selected'));
+      gridContainer.querySelectorAll('.studio-select-card').forEach(c => {
+        c.classList.remove('selected');
+        const cSub = c.querySelector('.studio-select-sub');
+        const cKey = c.getAttribute('data-id');
+        if (cSub) {
+          if (cKey === 'procedural') cSub.textContent = 'Procedural Mascot';
+          else if (cKey === 'flag') cSub.textContent = 'Interactive Cloth';
+          else {
+            const mAsset = customModelAssets.find(a => a.name === cKey);
+            cSub.textContent = mAsset ? `${mAsset.category} • ${mAsset.sizeFormatted}` : 'Custom GLTF';
+          }
+        }
+      });
       card.classList.add('selected');
+      sub.textContent = '🟢 Active';
 
-      updateActiveBanner(modelKey);
       modelSelect.value = modelKey;
       modelSelect.dispatchEvent(new Event('change'));
     });

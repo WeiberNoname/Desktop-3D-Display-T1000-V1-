@@ -476,6 +476,17 @@ function setupSettingsUI() {
     GLTFLoader,
     onSelectModel: (asset) => {
       if (asset && asset.name) {
+        currentSettings.activeModel = asset.name;
+        currentSettings.activeAnimation = 'default';
+        saveSettingsFile();
+        const modelSelect = document.getElementById('model-select');
+        if (modelSelect) {
+          modelSelect.value = asset.name;
+          modelSelect.dispatchEvent(new Event('change'));
+        }
+        if (callbacks && callbacks.populateModelDropdown) {
+          callbacks.populateModelDropdown();
+        }
         showSpeechBubble(`Selected 3D Mascot: ${asset.name}`);
       }
     },

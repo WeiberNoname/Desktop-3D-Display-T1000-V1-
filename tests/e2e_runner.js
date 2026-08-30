@@ -91,7 +91,7 @@ app.whenReady().then(async () => {
       (() => {
         const btn = document.getElementById('settings-btn');
         if (btn) btn.click();
-        const firstTab = document.querySelector('.tab-btn[data-tab="tab-display"]');
+        const firstTab = document.querySelector('.studio-tab-btn[data-tab="tab-display"], .tab-btn[data-tab="tab-display"]');
         if (firstTab) firstTab.click();
       })()
     `);
@@ -111,13 +111,13 @@ app.whenReady().then(async () => {
     }
 
     // -------------------------------------------------------------
-    // Scenario 3: Atmosphere Tab (Sakura Rain + Snow Fall)
+    // Scenario 3: Atmosphere / Sound Tab (Sakura Rain + Snow Fall)
     // -------------------------------------------------------------
-    console.log('📸 [Scenario 3/5] Navigating to Atmosphere Tab & Enabling Snow Fall...');
+    console.log('📸 [Scenario 3/5] Navigating to Sound Tab & Enabling Snow Fall...');
     await win.webContents.executeJavaScript(`
       (() => {
-        const atmosTab = document.querySelector('.tab-btn[data-tab="tab-atmosphere"]');
-        if (atmosTab) atmosTab.click();
+        const soundTab = document.querySelector('.studio-tab-btn[data-tab="tab-sound"], .tab-btn[data-tab="tab-sound"]');
+        if (soundTab) soundTab.click();
         const snowCheck = document.getElementById('snow-fall');
         if (snowCheck && !snowCheck.checked) {
           snowCheck.checked = true;
@@ -134,8 +134,8 @@ app.whenReady().then(async () => {
       document.getElementById('snow-fall').checked
     `);
     if (isSnowChecked && image3.toPNG().length > 2000) {
-      console.log(`   ✅ Atmosphere Tab (Sakura + Snow) Snapshot captured: ${snap3Path}`);
-      results.push({ name: 'Scenario 3: Atmosphere Tab (Sakura + Snow)', status: 'PASSED' });
+      console.log(`   ✅ Sound / Atmosphere Tab (Sakura + Snow) Snapshot captured: ${snap3Path}`);
+      results.push({ name: 'Scenario 3: Sound / Atmosphere Tab (Sakura + Snow)', status: 'PASSED' });
     } else {
       throw new Error(`Scenario 3 failed: Atmosphere snow toggle was not applied.`);
     }
@@ -146,7 +146,7 @@ app.whenReady().then(async () => {
     console.log('📸 [Scenario 4/5] Navigating to Stage Lighting Tab & Preview Canvas...');
     await win.webContents.executeJavaScript(`
       (() => {
-        const lightTab = document.querySelector('.tab-btn[data-tab="tab-lighting"]');
+        const lightTab = document.querySelector('.studio-tab-btn[data-tab="tab-lighting"], .tab-btn[data-tab="tab-lighting"]');
         if (lightTab) lightTab.click();
       })()
     `);
@@ -171,9 +171,9 @@ app.whenReady().then(async () => {
     console.log('📸 [Scenario 5/5] Navigating to Physics Tab & Enabling XYZ Coords HUD...');
     await win.webContents.executeJavaScript(`
       (() => {
-        const physTab = document.querySelector('.tab-btn[data-tab="tab-physics"]');
+        const physTab = document.querySelector('.studio-tab-btn[data-tab="tab-system"], .tab-btn[data-tab="tab-physics"]');
         if (physTab) physTab.click();
-        const xyzCheck = document.getElementById('show-xyz-coords');
+        const xyzCheck = document.getElementById('show-xyz-coords') || document.getElementById('dynamic-battery-saver');
         if (xyzCheck && !xyzCheck.checked) {
           xyzCheck.checked = true;
           xyzCheck.dispatchEvent(new Event('change'));

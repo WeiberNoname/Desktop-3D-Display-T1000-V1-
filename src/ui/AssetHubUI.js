@@ -97,24 +97,14 @@ export function setupAssetHubUI(deps = {}) {
     });
   }
 
-  // 2. Filter Buttons
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.getAttribute('data-filter') || 'all';
-      renderLibrary();
-    });
-  });
-
-  // 3. Render Asset Library Cards
+  // 2. Render Asset Library Cards
   const renderLibrary = () => {
     if (!libraryGrid) return;
-    const items = registry.getAssets(currentFilter);
-    const totalCount = registry.getAssets('all').length;
+    const items = registry.getAssets('all');
+    const totalCount = items.length;
 
     if (countBadge) {
-      countBadge.textContent = `${items.length} / ${totalCount} Assets`;
+      countBadge.textContent = `${totalCount} Assets`;
     }
 
     if (items.length === 0) {
@@ -198,6 +188,19 @@ export function setupAssetHubUI(deps = {}) {
           renderLibrary();
         });
       }
+
+      card.addEventListener('click', () => {
+        libraryGrid.querySelectorAll('.asset-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        if (asset.type === 'model') {
+          onSelectModel(asset);
+        } else if (asset.type === 'texture') {
+          onApplyTexture(asset);
+        } else if (asset.type === 'audio') {
+          onLoadPianoScore(asset);
+        }
+      });
 
       libraryGrid.appendChild(card);
     });

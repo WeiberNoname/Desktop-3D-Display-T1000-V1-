@@ -183,17 +183,29 @@ export function setupTextureTabUI(deps) {
       card.className = `studio-select-card ${isSelected ? 'selected' : ''}`;
       card.setAttribute('data-id', item.id);
 
+      const defaultSub = isPreset ? 'Built-in Flag' : ('Imported • ' + (item.sizeFormatted || 'Texture'));
+
       card.innerHTML = `
-        <div class="studio-select-thumb">
+        <div class="studio-select-thumb asset-thumbnail-wrapper">
           <img src="${texUrl}" class="asset-thumbnail-img" alt="${item.name}">
         </div>
-        <div class="studio-select-label" title="${item.name}">${isPreset ? item.icon + ' ' + item.name : item.name}</div>
-        <div class="studio-select-sub">${isPreset ? 'Built-in Flag' : 'Imported • ' + item.sizeFormatted}</div>
+        <div class="studio-select-label asset-card-label" title="${item.name}">${isPreset ? item.icon + ' ' + item.name : item.name}</div>
+        <div class="studio-select-sub asset-card-sub">${isSelected ? '🟢 Active' : defaultSub}</div>
       `;
 
       card.addEventListener('click', () => {
-        document.querySelectorAll('#texture-select-grid .studio-select-card').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('#texture-select-grid .studio-select-card').forEach(c => {
+          c.classList.remove('selected');
+          const cSub = c.querySelector('.studio-select-sub');
+          const cId = c.getAttribute('data-id');
+          const cItem = allItems.find(it => it.id === cId);
+          if (cSub && cItem) {
+            cSub.textContent = cItem.type === 'preset' ? 'Built-in Flag' : ('Imported • ' + (cItem.sizeFormatted || 'Texture'));
+          }
+        });
         card.classList.add('selected');
+        const activeSub = card.querySelector('.studio-select-sub');
+        if (activeSub) activeSub.textContent = '🟢 Active';
 
         if (isPreset) {
           currentSettings.customTexturePath = '';
