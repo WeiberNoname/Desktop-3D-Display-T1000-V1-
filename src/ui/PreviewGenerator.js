@@ -6,8 +6,9 @@
  */
 
 import { createProceduralMascot } from '../core/MascotBuilder.js';
-import { createFlagMesh } from '../core/FlagMeshBuilder.js';
+import { createFlagMesh, createPresetFlagTexture, updateFlagWave } from '../core/FlagMeshBuilder.js';
 import { ModelThumbnailGenerator } from '../core/ModelThumbnailGenerator.js';
+import { disposeHierarchy, disposeMixer } from '../core/GPUAssetManager.js';
 
 export const DEFAULT_FALLBACK_ICON = "data:image/svg+xml;utf8," + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
@@ -138,6 +139,11 @@ export function populateModelDropdown(ctx) {
       img.src = matchingAsset.thumbnailUrl;
     } else if (fs.existsSync(previewPath)) {
       img.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
+    } else if (modelKey === 'flag') {
+      img.src = (currentSettings && currentSettings.customTexturePath) ? currentSettings.customTexturePath : createPresetFlagTexture((currentSettings && currentSettings.flagPreset) || 'default');
+      generateMascotPreviewInBackground(ctx, 'flag');
+    } else if (modelKey === 'procedural') {
+      generateMascotPreviewInBackground(ctx, 'procedural');
     } else {
       img.src = DEFAULT_FALLBACK_ICON;
       if (matchingAsset && (ctx.THREE || window.THREE) && (ctx.GLTFLoader || window.GLTFLoader)) {
@@ -231,7 +237,7 @@ export function startBackgroundPreviewGenerator(ctx) {
   }
 
   const discovered = state && state.discoveredModels ? state.discoveredModels : [];
-  const allModels = ['procedural', ...discovered];
+  const allModels = ['procedural', 'flag', ...discovered];
   const queue = allModels.filter(modelKey => {
     const previewPath = path.join(previewsDir, `${modelKey}.png`);
     return !fs.existsSync(previewPath);
@@ -281,8 +287,8 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
     previewCamera.position.set(0, 0, 5.5);
     previewCamera.lookAt(0, 0, 0);
 
-    const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
     dirLight.position.set(3, 4, 5);
     previewScene.add(ambLight);
     previewScene.add(dirLight);
@@ -302,6 +308,8 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
       }
     } catch (e) {
       console.warn("Failed background capture for procedural mascot:", e);
+    } finally {
+      disposeHierarchy(previewScene);
     }
   } else if (modelKey === 'flag') {
     const previewScene = new THREE.Scene();
@@ -309,13 +317,16 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
     previewCamera.position.set(0, 0.2, 5.2);
     previewCamera.lookAt(0, 0.2, 0);
 
-    const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
     dirLight.position.set(3, 4, 5);
     previewScene.add(ambLight);
     previewScene.add(dirLight);
 
-    createFlagMesh(THREE, previewScene, ctx.currentSettings || {});
+    const flagResult = createFlagMesh(THREE, previewScene, ctx.currentSettings || {});
+    if (flagResult && flagResult.flagClothMesh) {
+      updateFlagWave(flagResult.flagClothMesh, 0.016, 1.5, 3.5, 0.35);
+    }
 
     try {
       renderer.render(previewScene, previewCamera);
@@ -324,12 +335,14 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
       fs.writeFileSync(previewPath, base64Data, 'base64');
       console.log(`Generated canonical preview for: flag`);
 
-      const imgEl = document.querySelector(`.mascot-thumbnail[data-mascot="flag"]`);
-      if (imgEl) {
+      const imgEls = document.querySelectorAll(`.mascot-thumbnail[data-mascot="flag"]`);
+      imgEls.forEach(imgEl => {
         imgEl.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
-      }
+      });
     } catch (e) {
       console.warn("Failed background capture for flag mesh:", e);
+    } finally {
+      disposeHierarchy(previewScene);
     }
   } else {
     const filePath = path.join(assetsDir, modelKey);
@@ -343,15 +356,29 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
       const previewScene = new THREE.Scene();
       const previewCamera = new THREE.PerspectiveCamera(45, 1.0, 0.1, 100);
 
-      const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
       dirLight.position.set(3, 4, 5);
       previewScene.add(ambLight);
       previewScene.add(dirLight);
 
-      const tempModel = gltf.scene;
+      const tempModel = gltf.scene || gltf;
       const tempGroup = new THREE.Group();
       previewScene.add(tempGroup);
+
+      // 🎬 In-Animation posing: Play primary clip and advance into animation cycle
+      let mixer = null;
+      if (gltf.animations && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(tempModel);
+        const clip = gltf.animations[0];
+        const action = mixer.clipAction(clip);
+        action.play();
+        const duration = clip.duration || 1.0;
+        mixer.update(Math.min(duration * 0.25, 0.45));
+        tempModel.updateMatrixWorld(true);
+      } else {
+        tempModel.updateMatrixWorld(true);
+      }
 
       const box = new THREE.Box3().setFromObject(tempModel);
       const size = box.getSize(new THREE.Vector3());
@@ -375,14 +402,19 @@ export function generateMascotPreviewInBackground(ctx, modelKey) {
         const dataUrl = renderer.domElement.toDataURL("image/png");
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
         fs.writeFileSync(previewPath, base64Data, 'base64');
-        console.log(`Generated canonical preview for custom model: ${modelKey}`);
+        console.log(`Generated canonical in-animation preview for custom model: ${modelKey}`);
 
-        const imgEl = document.querySelector(`.mascot-thumbnail[data-mascot="${modelKey}"]`);
-        if (imgEl) {
+        const imgEls = document.querySelectorAll(`.mascot-thumbnail[data-mascot="${modelKey}"], img[data-asset-thumb="${modelKey}"]`);
+        imgEls.forEach(imgEl => {
           imgEl.src = pathToFileURL(previewPath).href + "?t=" + Date.now();
-        }
+        });
       } catch (e) {
         console.warn(`Failed background capture for custom model: ${modelKey}`, e);
+      } finally {
+        if (mixer) {
+          disposeMixer(mixer, tempModel);
+        }
+        disposeHierarchy(previewScene);
       }
     }, undefined, (err) => {
       console.warn(`Failed to load ${modelKey} for background preview:`, err);

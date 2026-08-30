@@ -26,25 +26,27 @@ export function setupAssetHubUI(deps = {}) {
     if (!files || files.length === 0) return;
     for (const file of Array.from(files)) {
       const asset = await registry.registerFile(file);
-      if (asset && asset.type === 'model' && THREE && GLTFLoader) {
-        // Asynchronously capture 3D beauty thumbnail
+      if (asset && asset.type === 'model' && (THREE || window.THREE) && (GLTFLoader || window.GLTFLoader)) {
+        // Asynchronously capture in-animation 3D beauty thumbnail immediately
         ModelThumbnailGenerator.captureModelSnapshot({
           file: asset.file,
           objectUrl: asset.objectUrl,
-          THREE,
-          GLTFLoader
+          THREE: THREE || window.THREE,
+          GLTFLoader: GLTFLoader || window.GLTFLoader
         }).then(thumbDataUrl => {
           if (thumbDataUrl) {
             asset.thumbnailUrl = thumbDataUrl;
-            const imgEl = document.querySelector(`img[data-asset-thumb="${asset.id}"]`);
+            const imgEls = document.querySelectorAll(`img[data-asset-thumb="${asset.id}"], img[data-mascot="${asset.name}"]`);
             const placeholderEl = document.querySelector(`div[data-asset-placeholder="${asset.id}"]`);
-            if (imgEl) {
+            imgEls.forEach(imgEl => {
               imgEl.src = thumbDataUrl;
               imgEl.style.display = 'block';
-            }
+            });
             if (placeholderEl) {
               placeholderEl.style.display = 'none';
             }
+            // Propagate updated thumbnail to all asset grids (Mascot Studio Tab 3, etc.)
+            registry.notify();
           }
         });
       }

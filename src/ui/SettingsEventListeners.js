@@ -175,22 +175,24 @@ export function setupSettingsUI(deps) {
   if (modelSelect) {
     modelSelect.addEventListener('change', () => {
       const newModel = modelSelect.value;
-      if (newModel !== currentSettings.activeModel) {
-        currentSettings.activeModel = newModel;
-        currentSettings.activeAnimation = 'default';
-        if (saveSettingsFile) saveSettingsFile();
+      currentSettings.activeModel = newModel;
+      currentSettings.activeAnimation = 'default';
+      if (saveSettingsFile) saveSettingsFile();
 
-        if (newModel === 'procedural') {
-          if (deps.fallbackToProcedural) deps.fallbackToProcedural();
-        } else if (newModel === 'flag') {
-          if (deps.loadFlagModel) deps.loadFlagModel();
-        } else if (deps.getAssetsPath && deps.loadCustomModel && deps.path) {
+      if (newModel === 'procedural') {
+        if (deps.fallbackToProcedural) deps.fallbackToProcedural();
+      } else if (newModel === 'flag') {
+        if (deps.loadFlagModel) deps.loadFlagModel();
+      } else if (deps.loadCustomModel) {
+        const regAsset = window.__assetRegistryManager ? window.__assetRegistryManager.getAssets('model').find(a => a.name === newModel || a.id === newModel) : null;
+        if (regAsset && (regAsset.objectUrl || regAsset.file)) {
+          deps.loadCustomModel(regAsset.objectUrl);
+        } else if (deps.getAssetsPath && deps.path) {
           const fullPath = deps.path.join(deps.getAssetsPath(), newModel);
           deps.loadCustomModel(fullPath);
         }
-      } else {
-        if (populateAnimationDropdown) populateAnimationDropdown();
       }
+      if (populateAnimationDropdown) populateAnimationDropdown();
     });
   }
 

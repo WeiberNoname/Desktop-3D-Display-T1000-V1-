@@ -1,3 +1,5 @@
+import { eventBus } from './EventBus.js';
+
 export class SettingsManager {
   static getDefaultSettings() {
     return {
@@ -75,6 +77,37 @@ export class SettingsManager {
       return defaults;
     }
     return Object.assign({}, defaults, savedSettings);
+  }
+
+  /**
+   * Creates a reactive Settings object backed by EventBus and debounced persistence.
+   * @param {Object} initialSettings 
+   * @param {Function} [saveFn] - Optional auto-save callback
+   * @returns {Object} Reactive Proxy settings
+   */
+  static createReactiveSettings(initialSettings = {}, saveFn = null) {
+    const base = SettingsManager.mergeWithDefaults(initialSettings);
+    let debounceTimer = null;
+
+    return new Proxy(base, {
+      set: (target, prop, value) => {
+        const prev = target[prop];
+        target[prop] = value;
+
+        if (prev !== value) {
+          eventBus.emit('settings:changed', { key: prop, value, prevValue: prev, settings: target });
+          eventBus.emit(`settings:${String(prop)}`, value);
+
+          if (typeof saveFn === 'function') {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+              try { saveFn(target); } catch (e) { console.error('[SettingsManager] Auto-save error:', e); }
+            }, 200);
+          }
+        }
+        return true;
+      }
+    });
   }
 
   static readSettingsFile({ fs, path, getAssetsPath, currentSettings, ipcRenderer }) {

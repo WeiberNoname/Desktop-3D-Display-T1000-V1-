@@ -403,6 +403,7 @@ export class MidiParserEngine {
         { note: 60, dur: 1.0 }
       ]
     };
+    presets.minuet_in_g = presets.bach_minuet;
 
     const pattern = presets[presetName] || presets.fur_elise;
     let curTime = 0.2;

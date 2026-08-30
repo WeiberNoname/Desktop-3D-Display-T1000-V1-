@@ -820,7 +820,9 @@ Always reply conversationally in the user's language.`
     const assistantMessageObj = {
       role: 'assistant',
       content: responseText,
-      actions: executedActions
+      actions: executedActions,
+      isNeural: llmSucceeded,
+      engineMode: llmSucceeded ? 'Neural LLM' : 'Rule-Based Fallback'
     };
     this.conversationHistory.push(assistantMessageObj);
 

@@ -1,7 +1,7 @@
 /**
  * AI Function Director Tab UI Controller
- * Manages chat interface, local LLM endpoint configurations, prompt chips,
- * and live visual feedback for executed Display & Model functions.
+ * Manages conversational chat interface, dynamic AI Mode Indicator (Local LLM vs. Fallback),
+ * and centralized neural LLM configuration synchronization.
  */
 
 import { LLMDirectorEngine } from '../core/LLMDirectorEngine.js';
@@ -22,7 +22,7 @@ export function setupAIDirectorTabUI(deps) {
     callbacks
   });
 
-  // DOM Elements
+  // DOM Elements - System Tab Configuration Card
   const enableToggle = document.getElementById('ai-director-enable');
   const contextRetrievalToggle = document.getElementById('ai-context-retrieval-enable');
   const endpointInput = document.getElementById('ai-endpoint-url');
@@ -31,13 +31,34 @@ export function setupAIDirectorTabUI(deps) {
   const retrieverPresetSelect = document.getElementById('ai-retriever-preset');
   const customRetrieverBox = document.getElementById('ai-custom-retriever-box');
   const retrieverEndpointInput = document.getElementById('ai-retriever-endpoint');
-  const settingsAccordion = document.getElementById('ai-settings-panel');
-  const btnToggleConfig = document.getElementById('btn-ai-toggle-config');
+  const apiKeyInput = document.getElementById('ai-api-key');
 
+  const statusBadge = document.getElementById('ai-connection-status-badge');
+  const statusText = document.getElementById('ai-status-text');
+  const btnPing = document.getElementById('btn-ai-ping-endpoint');
+
+  // DOM Elements - AI Director Chat Tab
+  const modeIndicator = document.getElementById('ai-mode-indicator');
   const chatMessages = document.getElementById('ai-chat-messages');
   const chatInput = document.getElementById('ai-chat-input');
   const btnSend = document.getElementById('btn-ai-send');
   const btnClearChat = document.getElementById('btn-ai-clear');
+
+  // Update AI Mode Indicator Badge UI
+  const setModeIndicatorState = (isNeural, modelName = '') => {
+    if (!modeIndicator) return;
+    if (isNeural) {
+      modeIndicator.textContent = `🟢 Local LLM (${modelName || engine.modelName || 'Neural'})`;
+      modeIndicator.style.background = 'rgba(16, 185, 129, 0.18)';
+      modeIndicator.style.color = '#34d399';
+      modeIndicator.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+    } else {
+      modeIndicator.textContent = '⚡ Fallback Mode';
+      modeIndicator.style.background = 'rgba(245, 158, 11, 0.18)';
+      modeIndicator.style.color = '#fbbf24';
+      modeIndicator.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+    }
+  };
 
   // 1. Settings & Endpoint Controls
   if (enableToggle) {
@@ -74,10 +95,10 @@ export function setupAIDirectorTabUI(deps) {
       currentSettings.aiModelName = modelInput.value.trim();
       engine.modelName = currentSettings.aiModelName;
       if (saveSettingsFile) saveSettingsFile();
+      checkEndpointConnection();
     });
   }
 
-  const apiKeyInput = document.getElementById('ai-api-key');
   if (apiKeyInput) {
     apiKeyInput.value = currentSettings.aiApiKey || '';
     apiKeyInput.addEventListener('change', () => {
@@ -88,16 +109,13 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
-  const statusBadge = document.getElementById('ai-connection-status-badge');
-  const statusText = document.getElementById('ai-status-text');
-  const btnPing = document.getElementById('btn-ai-ping-endpoint');
-
   async function checkEndpointConnection() {
-    if (!statusText || !statusBadge) return;
-    statusText.textContent = '🔄 Testing connection to ' + (endpointInput ? endpointInput.value : 'endpoint') + '...';
-    statusBadge.style.background = 'rgba(148, 163, 184, 0.15)';
-    statusBadge.style.borderColor = 'rgba(148, 163, 184, 0.35)';
-    statusBadge.style.color = '#cbd5e1';
+    if (statusText) statusText.textContent = '🔄 Testing connection to ' + (endpointInput ? endpointInput.value : 'endpoint') + '...';
+    if (statusBadge) {
+      statusBadge.style.background = 'rgba(148, 163, 184, 0.15)';
+      statusBadge.style.borderColor = 'rgba(148, 163, 184, 0.35)';
+      statusBadge.style.color = '#cbd5e1';
+    }
 
     try {
       const ep = (endpointInput ? endpointInput.value : 'http://localhost:11434/v1').replace(/\/+$/, '') + '/chat/completions';
@@ -121,31 +139,46 @@ export function setupAIDirectorTabUI(deps) {
       clearTimeout(tid);
 
       if (res.ok || res.status === 400 || res.status === 422) {
-        statusText.textContent = `🟢 Connected! Real Neural LLM is active (${currentModel})`;
-        statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-        statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        statusBadge.style.color = '#34d399';
+        if (statusText) statusText.textContent = `🟢 Connected! Real Neural LLM is active (${currentModel})`;
+        if (statusBadge) {
+          statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          statusBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          statusBadge.style.color = '#34d399';
+        }
+        setModeIndicatorState(true, currentModel);
       } else if (res.status === 404) {
-        statusText.textContent = `⚠️ Model "${currentModel}" not found on server (404). Pull with: ollama run ${currentModel}`;
-        statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
-        statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
-        statusBadge.style.color = '#fbbf24';
+        if (statusText) statusText.textContent = `⚠️ Model "${currentModel}" not found on server (404). Pull with: ollama run ${currentModel}`;
+        if (statusBadge) {
+          statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+          statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+          statusBadge.style.color = '#fbbf24';
+        }
+        setModeIndicatorState(false);
       } else if (res.status === 401 || res.status === 403) {
-        statusText.textContent = `⚠️ Authentication Failed (${res.status}). Please check your API key in LLM Config.`;
-        statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
-        statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-        statusBadge.style.color = '#f87171';
+        if (statusText) statusText.textContent = `⚠️ Authentication Failed (${res.status}). Please check your API key in LLM Config.`;
+        if (statusBadge) {
+          statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          statusBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          statusBadge.style.color = '#f87171';
+        }
+        setModeIndicatorState(false);
       } else {
-        statusText.textContent = `⚠️ Endpoint returned HTTP ${res.status}. Falling back to offline companion engine.`;
+        if (statusText) statusText.textContent = `⚠️ Endpoint returned HTTP ${res.status}. Falling back to offline rule engine.`;
+        if (statusBadge) {
+          statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+          statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+          statusBadge.style.color = '#fbbf24';
+        }
+        setModeIndicatorState(false);
+      }
+    } catch (e) {
+      if (statusText) statusText.textContent = `⚡ Offline Fallback Mode (Cannot reach ${endpointInput ? endpointInput.value : 'endpoint'})`;
+      if (statusBadge) {
         statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
         statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
         statusBadge.style.color = '#fbbf24';
       }
-    } catch (e) {
-      statusText.textContent = `⚡ Offline Fallback Mode (Cannot reach ${endpointInput ? endpointInput.value : 'endpoint'})`;
-      statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
-      statusBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
-      statusBadge.style.color = '#fbbf24';
+      setModeIndicatorState(false);
     }
   }
 
@@ -164,28 +197,28 @@ export function setupAIDirectorTabUI(deps) {
       const p = providerSelect.value;
       currentSettings.aiProvider = p;
       if (p === 'ollama') {
-        endpointInput.value = 'http://localhost:11434/v1';
-        modelInput.value = 'llama3.2';
+        if (endpointInput) endpointInput.value = 'http://localhost:11434/v1';
+        if (modelInput) modelInput.value = 'llama3.2';
       } else if (p === 'lmstudio') {
-        endpointInput.value = 'http://localhost:1234/v1';
-        modelInput.value = 'qwen2.5-7b-instruct';
+        if (endpointInput) endpointInput.value = 'http://localhost:1234/v1';
+        if (modelInput) modelInput.value = 'qwen2.5-7b-instruct';
       } else if (p === 'groq') {
-        endpointInput.value = 'https://api.groq.com/openai/v1';
-        modelInput.value = 'llama-3.3-70b-versatile';
+        if (endpointInput) endpointInput.value = 'https://api.groq.com/openai/v1';
+        if (modelInput) modelInput.value = 'llama-3.3-70b-versatile';
       } else if (p === 'openrouter') {
-        endpointInput.value = 'https://openrouter.ai/api/v1';
-        modelInput.value = 'meta-llama/llama-3.2-3b-instruct:free';
+        if (endpointInput) endpointInput.value = 'https://openrouter.ai/api/v1';
+        if (modelInput) modelInput.value = 'meta-llama/llama-3.2-3b-instruct:free';
       } else if (p === 'deepseek') {
-        endpointInput.value = 'https://api.deepseek.com/v1';
-        modelInput.value = 'deepseek-chat';
+        if (endpointInput) endpointInput.value = 'https://api.deepseek.com/v1';
+        if (modelInput) modelInput.value = 'deepseek-chat';
       } else if (p === 'openai') {
-        endpointInput.value = 'https://api.openai.com/v1';
-        modelInput.value = 'gpt-4o-mini';
+        if (endpointInput) endpointInput.value = 'https://api.openai.com/v1';
+        if (modelInput) modelInput.value = 'gpt-4o-mini';
       } else if (p === 'custom') {
-        endpointInput.value = 'http://localhost:8080/v1';
+        if (endpointInput) endpointInput.value = 'http://localhost:8080/v1';
       }
-      currentSettings.aiEndpointUrl = endpointInput.value;
-      currentSettings.aiModelName = modelInput.value;
+      if (endpointInput) currentSettings.aiEndpointUrl = endpointInput.value;
+      if (modelInput) currentSettings.aiModelName = modelInput.value;
       engine.endpointUrl = currentSettings.aiEndpointUrl;
       engine.modelName = currentSettings.aiModelName;
       if (saveSettingsFile) saveSettingsFile();
@@ -217,15 +250,7 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
-  if (btnToggleConfig && settingsAccordion) {
-    btnToggleConfig.addEventListener('click', () => {
-      const isHidden = settingsAccordion.style.display === 'none';
-      settingsAccordion.style.display = isHidden ? 'block' : 'none';
-      btnToggleConfig.innerText = isHidden ? (t ? t('ai_hide_config', '⚙️ Hide Config') : '⚙️ Hide Config') : (t ? t('ai_config', '⚙️ LLM Config') : '⚙️ LLM Config');
-    });
-  }
-
-  // 2. Chat Rendering Helpers
+  // 2. Chat UI Helpers
   const scrollToBottom = () => {
     if (chatMessages) {
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -236,7 +261,7 @@ export function setupAIDirectorTabUI(deps) {
     if (!chatMessages) return;
 
     const msgEl = document.createElement('div');
-    msgEl.className = role === 'user' ? 'ai-msg-bubble ai-msg-user' : 'ai-msg-bubble ai-msg-bot';
+    msgEl.className = `ai-msg-bubble ai-msg-${role === 'user' ? 'user' : 'bot'}`;
 
     const avatar = document.createElement('span');
     avatar.className = 'ai-msg-avatar';
@@ -309,10 +334,12 @@ export function setupAIDirectorTabUI(deps) {
       removeTypingIndicator();
       if (response) {
         appendMessage('assistant', response.content, response.actions);
+        setModeIndicatorState(response.isNeural, engine.modelName);
       }
     } catch (err) {
       removeTypingIndicator();
       appendMessage('assistant', `Error processing command: ${err.message}`);
+      setModeIndicatorState(false);
     } finally {
       if (btnSend) btnSend.disabled = false;
       if (chatInput) chatInput.focus();
@@ -350,152 +377,5 @@ export function setupAIDirectorTabUI(deps) {
     });
   }
 
-  // 4. Automated Batch Test Runner
-  const DEFAULT_10_TEST_PROMPTS = [
-    "scale up a bit and spin Y",
-    "make the character twice as big",
-    "turn on sakura sound at 30 percent",
-    "I don't want to see sakura",
-    "switch to waving flag with cyber neon preset",
-    "increase wind speed to 5.5",
-    "enable mouse click through mode",
-    "make it peaceful for coding",
-    "what is the current status",
-    "reset all settings to default"
-  ].join(' //test// ');
-
-  const btnToggleBatch = document.getElementById('btn-ai-toggle-batch');
-  const batchPanel = document.getElementById('ai-batch-test-panel');
-  const batchInput = document.getElementById('ai-batch-prompts-input');
-  const btnRunBatch = document.getElementById('btn-ai-run-batch-test');
-  const btnResetBatch = document.getElementById('btn-ai-reset-batch-prompts');
-  const batchProgress = document.getElementById('ai-batch-progress-bar');
-
-  if (batchInput && !batchInput.value) {
-    batchInput.value = DEFAULT_10_TEST_PROMPTS;
-  }
-
-  if (btnToggleBatch && batchPanel) {
-    btnToggleBatch.addEventListener('click', () => {
-      const isHidden = batchPanel.style.display === 'none';
-      batchPanel.style.display = isHidden ? 'block' : 'none';
-      btnToggleBatch.innerText = isHidden ? (t ? t('ai_btn_hide_batch', '🧪 Hide Auto Test') : '🧪 Hide Auto Test') : (t ? t('ai_btn_batch_test', '🧪 Auto Test') : '🧪 Auto Test');
-    });
-  }
-
-  if (btnResetBatch && batchInput) {
-    btnResetBatch.addEventListener('click', () => {
-      batchInput.value = DEFAULT_10_TEST_PROMPTS;
-      if (batchProgress) {
-        batchProgress.style.display = 'none';
-      }
-    });
-  }
-
-  if (btnRunBatch) {
-    btnRunBatch.addEventListener('click', async () => {
-      const rawText = batchInput ? batchInput.value.trim() : '';
-      if (!rawText) return;
-
-      const prompts = rawText.split(/\/\/test\/\/|\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
-      if (prompts.length === 0) return;
-
-      btnRunBatch.disabled = true;
-      if (btnToggleBatch) btnToggleBatch.disabled = true;
-      if (batchProgress) {
-        batchProgress.style.display = 'block';
-        batchProgress.innerText = `Starting batch test for ${prompts.length} prompts...`;
-      }
-
-      for (let i = 0; i < prompts.length; i++) {
-        const p = prompts[i];
-        if (batchProgress) {
-          batchProgress.innerText = `⏳ Running [${i + 1}/${prompts.length}]: "${p}"...`;
-        }
-        await handleSendMessage(p);
-        await new Promise(res => setTimeout(res, 280));
-      }
-
-      if (batchProgress) {
-        batchProgress.innerText = `✅ Completed all ${prompts.length} prompts! Generating report...`;
-      }
-
-      // Automatically update & open the diagnostic report viewer
-      const fullReport = engine.getFormattedReport();
-      if (reportTextarea) {
-        reportTextarea.value = fullReport;
-      }
-      if (reportBox) {
-        reportBox.style.display = 'block';
-      }
-      if (btnToggleReport) {
-        btnToggleReport.innerText = t ? t('ai_hide_log', '❌ Hide Log') : '❌ Hide Log';
-      }
-
-      // Automatically copy the report to clipboard
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(fullReport);
-        } else if (reportTextarea) {
-          reportTextarea.select();
-          document.execCommand('copy');
-        }
-        if (batchProgress) {
-          batchProgress.innerText = `🎉 All ${prompts.length} tests finished & full report COPIED to clipboard!`;
-        }
-        if (showSpeechBubble) {
-          showSpeechBubble(`Automated Test Complete!\n${prompts.length} Prompts Log Copied! 📋`, 4000);
-        }
-      } catch (e) {
-        console.warn('Clipboard write error:', e);
-      }
-
-      btnRunBatch.disabled = false;
-      if (btnToggleBatch) btnToggleBatch.disabled = false;
-    });
-  }
-
-  // 5. Diagnostic Report & Audit Logger
-  const btnCopyReport = document.getElementById('btn-ai-copy-report');
-  const btnToggleReport = document.getElementById('btn-ai-toggle-report');
-  const reportBox = document.getElementById('ai-report-viewer-box');
-  const reportTextarea = document.getElementById('ai-report-viewer');
-
-  if (btnCopyReport) {
-    btnCopyReport.addEventListener('click', async () => {
-      const report = engine.getFormattedReport();
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(report);
-        } else if (reportTextarea) {
-          reportTextarea.value = report;
-          reportTextarea.select();
-          document.execCommand('copy');
-        }
-        btnCopyReport.innerText = t ? t('ai_report_copied', 'Copied to Clipboard! ✅') : 'Copied to Clipboard! ✅';
-        if (showSpeechBubble) {
-          showSpeechBubble('AI Report Copied!\nPaste it here to optimize! 📋', 3500);
-        }
-        setTimeout(() => {
-          btnCopyReport.innerText = t ? t('ai_btn_copy_report', '📋 Copy Diagnostic Report') : '📋 Copy Diagnostic Report';
-        }, 2500);
-      } catch (err) {
-        console.warn('Clipboard write failed:', err);
-      }
-    });
-  }
-
-  if (btnToggleReport && reportBox) {
-    btnToggleReport.addEventListener('click', () => {
-      const isHidden = reportBox.style.display === 'none';
-      reportBox.style.display = isHidden ? 'block' : 'none';
-      if (isHidden && reportTextarea) {
-        reportTextarea.value = engine.getFormattedReport();
-      }
-      btnToggleReport.innerText = isHidden ? (t ? t('ai_hide_log', '❌ Hide Log') : '❌ Hide Log') : (t ? t('ai_btn_view_report', '🔍 View Log') : '🔍 View Log');
-    });
-  }
-
   return engine;
 }
-

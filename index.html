@@ -42,6 +42,7 @@
         <button class="studio-tab-btn active" data-tab="tab-ai" data-i18n="tab_ai">🤖 AI Director</button>
         <button class="studio-tab-btn" data-tab="tab-assets" data-i18n="tab_assets">📦 Asset Hub</button>
         <button class="studio-tab-btn" data-tab="tab-display" data-i18n="tab_display">🐰 Mascot</button>
+        <button class="studio-tab-btn" data-tab="tab-atmosphere" data-i18n="tab_atmosphere">🌸 Atmosphere</button>
         <button class="studio-tab-btn" data-tab="tab-lighting" data-i18n="tab_lighting">🔦 Lighting</button>
         <button class="studio-tab-btn" data-tab="tab-texture" data-i18n="tab_texture">🎨 Texture</button>
         <button class="studio-tab-btn" data-tab="tab-sound" data-i18n="tab_sound">🎵 Sound</button>
@@ -55,125 +56,14 @@
 
       <!-- Tab 1: AI Function Director (Primary Studio Control) -->
       <div id="tab-ai" class="studio-tab-content active">
-        <!-- Live AI Header Card -->
+        <!-- Live AI Conversational Card -->
         <div class="studio-card">
           <div class="studio-card-header">
             <span class="studio-card-title" data-i18n="ai_tab_title">🤖 AI Function Director</span>
-            <div style="display: flex; gap: 4px;">
-              <button id="btn-ai-toggle-batch" class="studio-btn-ghost" style="padding: 2px 8px; font-size: 0.85em;" data-i18n="ai_btn_batch_test">🧪 Auto Test</button>
-              <button id="btn-ai-toggle-config" class="studio-btn-ghost" style="padding: 2px 8px; font-size: 0.85em;" data-i18n="ai_config">⚙️ LLM Config</button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="ai-mode-indicator" class="studio-badge studio-badge-amber" style="font-size: 0.8em;">⚡ Fallback Mode</span>
+              <button id="btn-ai-clear" class="studio-btn-ghost" style="padding: 2px 8px; font-size: 0.85em;" title="Clear Conversation">🧹 Clear</button>
             </div>
-          </div>
-          
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <span class="studio-row-title" data-i18n="ai_enable_toggle">AI Function Directing</span>
-              <span class="studio-row-sub">Physical control of 3D mascot, lighting & audio</span>
-            </div>
-            <label class="studio-switch">
-              <input type="checkbox" id="ai-director-enable" checked>
-              <span class="studio-slider-knob"></span>
-            </label>
-          </div>
-
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <span class="studio-row-title" data-i18n="ai_context_retrieval_toggle">AI Context & State Awareness</span>
-              <span class="studio-row-sub" data-i18n="ai_context_retrieval_sub">Feed real-time app telemetry and state to AI</span>
-            </div>
-            <label class="studio-switch">
-              <input type="checkbox" id="ai-context-retrieval-enable" checked>
-              <span class="studio-slider-knob"></span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Collapsible Batch Prompt Test Runner Panel -->
-        <div id="ai-batch-test-panel" class="studio-card" style="display: none;">
-          <div class="studio-card-header">
-            <span class="studio-card-title" data-i18n="ai_batch_title">🧪 Automated Batch Prompt Runner</span>
-            <span style="font-size: 0.8em; color: #f39c12;">Delimiter: <code>//test//</code></span>
-          </div>
-          <textarea id="ai-batch-prompts-input" placeholder="Enter prompts separated by //test//..." style="width: 100%; height: 80px; background: #222228; border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; padding: 6px 8px; resize: vertical; box-sizing: border-box; line-height: 1.4; outline: none;"></textarea>
-          <div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button id="btn-ai-run-batch-test" class="studio-btn-primary" style="flex: 1;" data-i18n="ai_btn_run_batch">▶ Run 10 Batch Prompts</button>
-            <button id="btn-ai-reset-batch-prompts" class="studio-btn-ghost" title="Reset Default 10 Prompts" data-i18n="ai_btn_reset_batch">🔄 10 Presets</button>
-          </div>
-          <div id="ai-batch-progress-bar" style="display: none; margin-top: 6px; font-size: 0.82em; color: #34d399; font-weight: 600; padding: 4px 6px; background: rgba(16,185,129,0.12); border-radius: 4px; border: 1px solid rgba(16,185,129,0.3);"></div>
-        </div>
-
-        <!-- Collapsible Endpoint Config Section -->
-        <div id="ai-settings-panel" class="studio-card" style="display: none;">
-          <div class="studio-card-header">
-            <span class="studio-card-title">⚙️ LLM & Endpoint Configuration</span>
-          </div>
-
-          <!-- Live Connection Status Banner -->
-          <div id="ai-connection-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82em; padding: 5px 8px; border-radius: 5px; margin-bottom: 8px; background: rgba(243, 156, 18, 0.12); border: 1px solid rgba(243, 156, 18, 0.35); color: #f39c12;">
-            <span id="ai-status-text">⚡ Status: Checking neural endpoint connection...</span>
-            <button id="btn-ai-ping-endpoint" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;">🔄 Check</button>
-          </div>
-
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <label for="ai-provider-select" class="studio-row-title" data-i18n="ai_provider">Provider Preset</label>
-            </div>
-            <select id="ai-provider-select" class="studio-select" style="width: 175px;">
-              <option value="ollama" selected>Ollama Local (localhost:11434 - llama3.2)</option>
-              <option value="lmstudio">LM Studio Local (localhost:1234)</option>
-              <option value="groq">Groq Cloud (Fast Free - Llama-3.3-70B)</option>
-              <option value="openrouter">OpenRouter Cloud (Free Tier Models)</option>
-              <option value="deepseek">DeepSeek API (deepseek-chat)</option>
-              <option value="openai">OpenAI (gpt-4o-mini)</option>
-              <option value="custom">Custom OpenAI Endpoint</option>
-            </select>
-          </div>
-
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <label for="ai-endpoint-url" class="studio-row-title" data-i18n="ai_endpoint">Endpoint URL</label>
-            </div>
-            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
-          </div>
-
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <label for="ai-model-name" class="studio-row-title" data-i18n="ai_model">Model Name</label>
-            </div>
-            <input type="text" id="ai-model-name" value="llama3.2" class="studio-select" style="width: 175px;">
-          </div>
-
-          <div id="ai-api-key-container" class="studio-row">
-            <div class="studio-row-label">
-              <label for="ai-api-key" class="studio-row-title" data-i18n="ai_api_key">API Key</label>
-            </div>
-            <input type="password" id="ai-api-key" placeholder="Optional for local" class="studio-select" style="width: 175px;">
-          </div>
-
-          <div class="studio-row">
-            <div class="studio-row-label">
-              <label for="ai-retriever-preset" class="studio-row-title" data-i18n="ai_retriever_preset">Knowledge Retriever</label>
-            </div>
-            <select id="ai-retriever-preset" class="studio-select" style="width: 175px;">
-              <option value="builtin_rag" selected>Built-in RAG Telemetry</option>
-              <option value="deep_inspection">Deep Subsystem Spec</option>
-              <option value="custom_endpoint">Secondary Endpoint</option>
-            </select>
-          </div>
-
-          <div id="ai-custom-retriever-box" class="studio-row" style="display: none;">
-            <div class="studio-row-label">
-              <label for="ai-retriever-endpoint" class="studio-row-title" data-i18n="ai_retriever_endpoint">Secondary Endpoint</label>
-            </div>
-            <input type="text" id="ai-retriever-endpoint" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
-          </div>
-        </div>
-
-        <!-- Chat Conversation Card -->
-        <div class="studio-card">
-          <div class="studio-card-header">
-            <span class="studio-card-title">💬 Live Assistant Interaction</span>
-            <button id="btn-ai-clear" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;" title="Clear Conversation">🧹 Clear</button>
           </div>
 
           <!-- Chat Conversation Messages Window -->
@@ -192,17 +82,6 @@
           <div class="ai-input-bar" style="display: flex; gap: 6px; margin-top: 6px;">
             <input type="text" id="ai-chat-input" placeholder="Tell AI what to do (e.g. 'scale to 1.8x and spin')..." data-i18n-placeholder="ai_input_placeholder" class="studio-select" style="flex: 1; padding: 6px 10px; font-size: 0.9em;">
             <button id="btn-ai-send" class="studio-btn-primary" style="padding: 6px 14px;" data-i18n="ai_send">Send</button>
-          </div>
-
-          <!-- Diagnostic Log Report Actions -->
-          <div style="display: flex; gap: 6px; margin-top: 8px;">
-            <button id="btn-ai-copy-report" class="studio-btn-ghost" style="flex: 1; font-size: 0.85em;" data-i18n="ai_btn_copy_report">📋 Copy Report</button>
-            <button id="btn-ai-toggle-report" class="studio-btn-ghost" style="font-size: 0.85em;" data-i18n="ai_btn_view_report">🔍 View Log</button>
-          </div>
-
-          <!-- Live Diagnostic Report Viewer Box -->
-          <div id="ai-report-viewer-box" style="display: none; margin-top: 6px;">
-            <textarea id="ai-report-viewer" readonly style="width: 100%; height: 110px; background: #222228; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 0.8em; padding: 6px; resize: vertical; box-sizing: border-box;"></textarea>
           </div>
         </div>
       </div>
@@ -267,7 +146,78 @@
         </div>
       </div>
 
-      <!-- Tab 3: Stage Lighting -->
+      <!-- Tab: Atmosphere & Ambient Weather Effects -->
+      <div id="tab-atmosphere" class="studio-tab-content">
+        <!-- 1. Ambient Weather Atmosphere Card -->
+        <div class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="atmosphere_title">🌸 Ambient Weather & Atmosphere</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.85em; color: #d1d5db;" data-i18n="atmosphere_master_enable">Master</span>
+              <label class="studio-switch">
+                <input type="checkbox" id="atmosphere-master-enable" checked>
+                <span class="studio-slider-knob"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="atmosphere_sound_sync">Audio Atmosphere Sync</span>
+              <span class="studio-row-sub">Automatically link weather effects to ambient synth music</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="atmosphere-sound-sync" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <!-- Standardized Selectable Atmosphere File Holder Grid -->
+          <div id="atmosphere-select-grid" class="studio-select-grid" style="margin-top: 6px;">
+            <!-- Weather 1: Sakura Rain -->
+            <div id="weather-card-sakura" class="studio-select-card weather-card selected" data-weather="sakura">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(244, 114, 182, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #f472b6);">🌸</div>
+                <span class="asset-ext-badge" style="color: #f472b6; border-color: rgba(244,114,182,0.4); background: rgba(244,114,182,0.15); margin-top: 4px;">.WEATHER</span>
+              </div>
+              <div class="studio-select-label asset-card-label" data-i18n="weather_sakura_title">🌸 Sakura Rain</div>
+              <div class="studio-select-sub asset-card-sub">Spring Blossom Petals</div>
+            </div>
+
+            <!-- Weather 2: Winter Snow -->
+            <div id="weather-card-snow" class="studio-select-card weather-card" data-weather="snow">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(56, 189, 248, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #38bdf8);">❄️</div>
+                <span class="asset-ext-badge" style="color: #38bdf8; border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.15); margin-top: 4px;">.WEATHER</span>
+              </div>
+              <div class="studio-select-label asset-card-label" data-i18n="weather_snow_title">❄️ Winter Snow</div>
+              <div class="studio-select-sub asset-card-sub">Glistening Flakes</div>
+            </div>
+
+            <!-- Weather 3: Dual Storm (Both) -->
+            <div id="weather-card-both" class="studio-select-card weather-card" data-weather="both">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(168, 85, 247, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #a855f7);">🌸❄️</div>
+                <span class="asset-ext-badge" style="color: #a855f7; border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.15); margin-top: 4px;">.WEATHER</span>
+              </div>
+              <div class="studio-select-label asset-card-label" data-i18n="weather_both_title">🌸❄️ Dual Storm</div>
+              <div class="studio-select-sub asset-card-sub">Petals & Snow Mix</div>
+            </div>
+
+            <!-- Weather 4: Clear Skies (Disabled) -->
+            <div id="weather-card-none" class="studio-select-card weather-card" data-weather="none">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(156, 163, 175, 0.2) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #9ca3af);">☀️</div>
+                <span class="asset-ext-badge" style="color: #9ca3af; border-color: rgba(156,163,175,0.4); background: rgba(156,163,175,0.15); margin-top: 4px;">.CLEAR</span>
+              </div>
+              <div class="studio-select-label asset-card-label" data-i18n="weather_clear_title">☀️ Clear Skies</div>
+              <div class="studio-select-sub asset-card-sub">No Particles</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Stage Lighting -->
       <div id="tab-lighting" class="studio-tab-content">
         <!-- 3D Preview Viewport Card -->
         <div class="studio-card">
@@ -419,10 +369,10 @@
 
       <!-- Tab 5: Sound & Procedural Audio FX -->
       <div id="tab-sound" class="studio-tab-content">
-        <!-- Ambient Synthesizer Card -->
+        <!-- 1. Unified Instruments & Audio Engines Selection Card -->
         <div class="studio-card">
           <div class="studio-card-header">
-            <span class="studio-card-title" data-i18n="sound_title">🎵 Audio & Ambient Synthesizer</span>
+            <span class="studio-card-title" data-i18n="sound_title">🎹 Instruments & Sound Synthesizers</span>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 0.85em; color: #d1d5db;" data-i18n="sound_master_enable">Master</span>
               <label class="studio-switch">
@@ -443,10 +393,30 @@
             </div>
           </div>
 
-          <!-- Standardized Sound Synth Asset Holder Grid (Pure Selectable Cards) -->
-          <div id="sound-synth-grid" class="studio-select-grid" style="grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); margin-top: 6px;">
-            <!-- Track 1: Snow Wind -->
-            <div id="sound-card-snow" class="studio-select-card sound-synth-card selected" data-track="snow">
+          <!-- Standardized Selectable Instrument File Holder Grid -->
+          <div id="instrument-select-grid" class="studio-select-grid" style="margin-top: 6px;">
+            <!-- Instrument 1: Grand Piano (MIDI Waterfall) -->
+            <div id="instrument-card-piano" class="studio-select-card instrument-card selected" data-instrument="piano">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(245, 158, 11, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #fbbf24);">🎹</div>
+                <span class="asset-ext-badge" style="color: #fbbf24; border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.15); margin-top: 4px;">.MIDI</span>
+              </div>
+              <div class="studio-select-label asset-card-label">🎹 Grand Piano</div>
+              <div class="studio-select-sub asset-card-sub">Waterfall Roll</div>
+            </div>
+
+            <!-- Instrument 2: Sheet Music Reader (MusicXML) -->
+            <div id="instrument-card-sheet" class="studio-select-card instrument-card" data-instrument="sheet">
+              <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(56, 189, 248, 0.35) 0%, #141418 70%);">
+                <div style="font-size: 2em; filter: drop-shadow(0 0 8px #38bdf8);">🎼</div>
+                <span class="asset-ext-badge" style="color: #38bdf8; border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.15); margin-top: 4px;">.XML</span>
+              </div>
+              <div class="studio-select-label asset-card-label">🎼 Sheet Reader</div>
+              <div class="studio-select-sub asset-card-sub">Grand Staff Score</div>
+            </div>
+
+            <!-- Instrument 3: Snow Wind Synth -->
+            <div id="sound-card-snow" class="studio-select-card sound-synth-card instrument-card" data-instrument="snow" data-track="snow">
               <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(56, 189, 248, 0.35) 0%, #141418 70%);">
                 <div style="font-size: 2em; filter: drop-shadow(0 0 8px #38bdf8);">❄️</div>
                 <span id="badge-sound-snow" class="asset-ext-badge" style="color: #38bdf8; border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.15); margin-top: 4px;">.SYNTH</span>
@@ -455,8 +425,8 @@
               <div id="sub-sound-snow" class="studio-select-sub asset-card-sub">Winter Ambience</div>
             </div>
 
-            <!-- Track 2: Sakura Melody -->
-            <div id="sound-card-sakura" class="studio-select-card sound-synth-card" data-track="sakura">
+            <!-- Instrument 4: Sakura Koto Synth -->
+            <div id="sound-card-sakura" class="studio-select-card sound-synth-card instrument-card" data-instrument="sakura" data-track="sakura">
               <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(244, 114, 182, 0.35) 0%, #141418 70%);">
                 <div style="font-size: 2em; filter: drop-shadow(0 0 8px #f472b6);">🌸</div>
                 <span id="badge-sound-sakura" class="asset-ext-badge" style="color: #f472b6; border-color: rgba(244,114,182,0.4); background: rgba(244,114,182,0.15); margin-top: 4px;">.SYNTH</span>
@@ -465,8 +435,8 @@
               <div id="sub-sound-sakura" class="studio-select-sub asset-card-sub">Spring Bells</div>
             </div>
 
-            <!-- Track 3: Lo-Fi Drum -->
-            <div id="sound-card-drum" class="studio-select-card sound-synth-card" data-track="drum">
+            <!-- Instrument 5: Lo-Fi Drum Synth -->
+            <div id="sound-card-drum" class="studio-select-card sound-synth-card instrument-card" data-instrument="drum" data-track="drum">
               <div class="studio-select-thumb asset-thumbnail-wrapper" style="background: radial-gradient(circle at center, rgba(245, 158, 11, 0.35) 0%, #141418 70%);">
                 <div style="font-size: 2em; filter: drop-shadow(0 0 8px #fbbf24);">🥁</div>
                 <span id="badge-sound-drum" class="asset-ext-badge" style="color: #fbbf24; border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.15); margin-top: 4px;">.SYNTH</span>
@@ -476,16 +446,16 @@
             </div>
           </div>
 
-          <!-- Reusable Shared Selected Track Controls -->
-          <div id="sound-track-editor" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12);">
+          <!-- Ambient Synth Track Quick Editor (Shown when a synth is active) -->
+          <div id="sound-track-editor" style="display: none; margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12);">
             <div class="studio-card-header" style="margin-bottom: 6px;">
-              <span id="sound-editor-title" class="studio-card-title" style="font-size: 0.92em; color: #38bdf8;">❄️ Selected Track: Snow Wind</span>
+              <span id="sound-editor-title" class="studio-card-title" style="font-size: 0.92em; color: #38bdf8;">❄️ Selected Synth: Snow Wind</span>
               <button id="btn-sound-active-play" class="studio-btn-primary" style="padding: 2px 10px; font-size: 0.85em;" data-i18n="sound_play">▶ Play</button>
             </div>
 
             <div class="studio-row">
               <div class="studio-row-label">
-                <label for="sound-active-vol" class="studio-row-title">Track Volume</label>
+                <label for="sound-active-vol" class="studio-row-title">Synth Volume</label>
                 <span class="studio-row-sub">Channel gain multiplier</span>
               </div>
               <div class="studio-number-wrapper">
@@ -493,126 +463,59 @@
                 <span class="studio-unit-suffix">vol</span>
               </div>
             </div>
-
-            <div id="sound-active-options" class="studio-row" style="align-items: center;">
-              <div class="studio-row-label">
-                <span class="studio-row-title">Atmosphere Sync & FX</span>
-                <span class="studio-row-sub">Weather coupling & visual particles</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="snow-fall" style="display: none;" checked>
-                <input type="checkbox" id="sakura-rain" style="display: none;" checked>
-                <label id="label-sound-active-fx" style="cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 0.82em; color: #d1d5db;">
-                  <input type="checkbox" id="sound-active-fx" checked style="accent-color: #38bdf8; width: 12px; height: 12px; cursor: pointer;">
-                  <span>Particles FX</span>
-                </label>
-                <label id="label-sound-active-sync" style="cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 0.82em; color: #d1d5db;">
-                  <input type="checkbox" id="sound-active-sync" checked style="accent-color: #38bdf8; width: 12px; height: 12px; cursor: pointer;">
-                  <span>Auto-sync</span>
-                </label>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Grand Piano & Sheet Music Studio Card -->
-        <div class="studio-card">
+        <!-- 2. Grand Piano & Sheet Music Studio Card (Song Library & Playback Strip) -->
+        <div id="piano-studio-deck" class="studio-card">
           <div class="studio-card-header">
-            <span class="studio-card-title" data-i18n="piano_studio_title">🎹 Piano & Sheet Music Studio</span>
-            <div style="display: flex; gap: 4px;">
-              <button id="btn-piano-mode-midi" class="studio-btn-primary" style="padding: 2px 6px; font-size: 0.85em;" data-i18n="piano_mode_midi">Waterfall</button>
-              <button id="btn-piano-mode-xml" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;" data-i18n="piano_mode_xml">Sheet</button>
-            </div>
+            <span class="studio-card-title" data-i18n="piano_song_library">🎼 Classical Scores & Song Library</span>
+            <span id="piano-song-count" class="studio-badge studio-badge-amber">4 Scores</span>
           </div>
 
-          <!-- MIDI Waterfall Canvas Viewport -->
-          <div id="piano-midi-section" class="piano-viewport-wrapper">
-            <canvas id="piano-midi-canvas" width="600" height="110" class="piano-canvas"></canvas>
-          </div>
+          <!-- Standardized Selectable Music File Holder Grid -->
+          <div id="piano-song-grid" class="studio-select-grid" style="margin-top: 6px; max-height: 180px;"></div>
 
-          <!-- MusicXML Score Viewport -->
-          <div id="piano-xml-section" class="piano-viewport-wrapper" style="display: none;">
-            <canvas id="piano-score-canvas" width="600" height="110" class="piano-canvas"></canvas>
-          </div>
-
-          <!-- Octave View Range Toolbar -->
-          <div class="studio-row" style="margin-top: 6px; padding: 4px 0;">
-            <div class="studio-row-label">
-              <label for="piano-range-select" class="studio-row-title" data-i18n="piano_view_range">Octave Range</label>
-            </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <select id="piano-range-select" class="studio-select" style="padding: 2px 6px; font-size: 0.85em; width: 110px;">
-                <option value="auto" data-i18n="piano_range_auto" selected>Auto Fit</option>
-                <option value="bass" data-i18n="piano_range_bass">Bass (C2-C4)</option>
-                <option value="mid" data-i18n="piano_range_mid">Mid (C3-C5)</option>
-                <option value="treble" data-i18n="piano_range_treble">Treble (C4-C6)</option>
-                <option value="full" data-i18n="piano_range_full">Full 88-Key</option>
-              </select>
-              <button id="btn-octave-bass" class="studio-btn-ghost" style="padding: 2px 5px; font-size: 0.8em;">C2</button>
-              <button id="btn-octave-mid" class="studio-btn-ghost active" style="padding: 2px 5px; font-size: 0.8em;">C3</button>
-              <button id="btn-octave-treble" class="studio-btn-ghost" style="padding: 2px 5px; font-size: 0.8em;">C4</button>
-              <label style="display: flex; align-items: center; gap: 3px; font-size: 0.8em; color: #d1d5db; margin-left: 4px;">
-                <input type="checkbox" id="piano-autoscroll-check" checked style="accent-color: #e67e22; width: 11px; height: 11px;">
-                <span data-i18n="piano_autofollow">Follow</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Virtual Interactive 88-Key Piano Keyboard -->
-          <div class="piano-keyboard-wrapper" style="margin-top: 4px;">
-            <div class="piano-nav-strip">
-              <button id="btn-octave-left" class="studio-btn-ghost" style="padding: 1px 6px; font-size: 0.8em;" title="Shift View Left">◀</button>
-              <span id="piano-song-title" class="piano-song-banner" data-i18n="piano_no_song">🎵 No file loaded (Built-in Synthesizer Ready)</span>
-              <button id="btn-octave-right" class="studio-btn-ghost" style="padding: 1px 6px; font-size: 0.8em;" title="Shift View Right">▶</button>
-            </div>
-            <div id="piano-keyboard-container" class="piano-keys-scroll"></div>
-          </div>
-
-          <!-- Playback Controls & Transport Bar -->
-          <div class="piano-transport-bar" style="margin-top: 6px;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <button id="btn-piano-play" class="studio-btn-primary" style="padding: 4px 10px; font-size: 0.9em;" data-i18n="piano_btn_play">▶ Play</button>
-              <button id="btn-piano-stop" class="studio-btn-ghost" style="padding: 4px 8px; font-size: 0.9em;" data-i18n="piano_btn_stop">⏹ Stop</button>
-              <input type="range" id="piano-timeline" min="0" max="100" value="0" step="0.1" style="flex: 1; accent-color: #e67e22; height: 4px; cursor: pointer;">
-              <span id="val-piano-time" style="font-family: monospace; font-size: 0.82em; color: #f39c12; min-width: 70px; text-align: right;">0:00 / 0:00</span>
-            </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 0.85em;">
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <label for="piano-tempo-slider" style="margin: 0; color: #d1d5db;"><span data-i18n="piano_tempo">Speed</span>:</label>
-                <div class="studio-number-wrapper">
-                  <input type="number" id="piano-tempo-slider" class="studio-number-input" min="0.25" max="3.0" step="0.1" value="1.0" style="width: 44px;">
-                  <span class="studio-unit-suffix">x</span>
+          <!-- Simplified Playback Strip (Song Title, Play & Loop Toggle Only) -->
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.12);">
+            <div class="piano-transport-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(0,0,0,0.25); border-radius: 6px; gap: 10px;">
+              <span id="piano-song-title" class="studio-card-title" style="font-size: 0.92em; color: #f39c12; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" data-i18n="piano_no_song">🎹 Beethoven - Für Elise</span>
+              
+              <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label for="piano-loop-check" class="studio-toggle-title" style="font-size: 0.85em; cursor: pointer;" data-i18n="piano_loop">🔁 Loop</label>
+                  <label class="studio-switch">
+                    <input type="checkbox" id="piano-loop-check">
+                    <span class="studio-slider-knob"></span>
+                  </label>
                 </div>
+                
+                <button id="btn-piano-play" class="studio-btn-primary" style="padding: 5px 22px; font-size: 0.92em;" data-i18n="piano_play">▶ Play</button>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <label for="piano-vol-slider" style="margin: 0; color: #d1d5db;"><span data-i18n="piano_vol">Vol</span>:</label>
-                <div class="studio-number-wrapper">
-                  <input type="number" id="piano-vol-slider" class="studio-number-input" min="0.0" max="1.0" step="0.05" value="0.85" style="width: 44px;">
-                  <span class="studio-unit-suffix">vol</span>
-                </div>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 3px;">
-                  <input type="checkbox" id="piano-sustain-check" style="accent-color: #e67e22; width: 11px; height: 11px;">
-                  <label for="piano-sustain-check" data-i18n="piano_sustain" style="margin: 0; font-size: 0.85em; cursor: pointer;">Sustain</label>
-                </div>
-                <div style="display: flex; align-items: center; gap: 3px;">
-                  <input type="checkbox" id="piano-loop-check" style="accent-color: #e67e22; width: 11px; height: 11px;">
-                  <label for="piano-loop-check" data-i18n="piano_loop" style="margin: 0; font-size: 0.85em; cursor: pointer;">Loop</label>
-                </div>
+              <!-- Hidden headless compatibility elements -->
+              <div style="display: none;">
+                <div id="btn-piano-mode-midi"></div>
+                <div id="btn-piano-mode-xml"></div>
+                <div id="piano-midi-section"><canvas id="piano-midi-canvas" width="10" height="10"></canvas></div>
+                <div id="piano-xml-section"><canvas id="piano-score-canvas" width="10" height="10"></canvas></div>
+                <div id="piano-keyboard-container"></div>
+                <select id="piano-range-select"><option value="auto" selected>Auto</option></select>
+                <button id="btn-octave-bass"></button>
+                <button id="btn-octave-mid"></button>
+                <button id="btn-octave-treble"></button>
+                <button id="btn-octave-left"></button>
+                <button id="btn-octave-right"></button>
+                <input type="checkbox" id="piano-autoscroll-check">
+                <button id="btn-piano-stop"></button>
+                <input type="range" id="piano-timeline">
+                <span id="val-piano-time">0:00 / 0:00</span>
+                <input type="number" id="piano-tempo-slider" value="1.0">
+                <input type="number" id="piano-vol-slider" value="0.85">
+                <input type="checkbox" id="piano-sustain-check" checked>
               </div>
             </div>
           </div>
-
-          <!-- Piano Song Selection Grid -->
-          <div class="studio-card-header" style="margin-top: 10px;">
-            <span class="studio-card-title" data-i18n="piano_song_library">🎼 Song Library & Classical Scores</span>
-            <span id="piano-song-count" class="studio-badge studio-badge-amber">3 Scores</span>
-          </div>
-          <div id="piano-song-grid" class="studio-select-grid" style="max-height: 180px;"></div>
 
           <!-- Compatibility hidden input & select -->
           <select id="piano-preset-select" class="studio-select" style="display: none;">
@@ -627,6 +530,95 @@
 
       <!-- Tab 6: System & Preferences (Centralized Configuration Hub) -->
       <div id="tab-system" class="studio-tab-content">
+        <!-- 0. Neural LLM & AI Function Director Configuration Card -->
+        <div id="ai-settings-panel" class="studio-card">
+          <div class="studio-card-header">
+            <span class="studio-card-title" data-i18n="ai_llm_config_title">🤖 Neural LLM & AI Director Configuration</span>
+          </div>
+
+          <!-- Live Connection Status Banner -->
+          <div id="ai-connection-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82em; padding: 5px 8px; border-radius: 5px; margin-bottom: 8px; background: rgba(243, 156, 18, 0.12); border: 1px solid rgba(243, 156, 18, 0.35); color: #f39c12;">
+            <span id="ai-status-text">⚡ Status: Checking neural endpoint connection...</span>
+            <button id="btn-ai-ping-endpoint" class="studio-btn-ghost" style="padding: 2px 6px; font-size: 0.85em;">🔄 Check</button>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="ai_enable_toggle">AI Function Directing</span>
+              <span class="studio-row-sub">Physical control of 3D mascot, lighting & audio</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="ai-director-enable" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <span class="studio-row-title" data-i18n="ai_context_retrieval_toggle">AI Context & State Awareness</span>
+              <span class="studio-row-sub" data-i18n="ai_context_retrieval_sub">Feed real-time app telemetry and state to AI</span>
+            </div>
+            <label class="studio-switch">
+              <input type="checkbox" id="ai-context-retrieval-enable" checked>
+              <span class="studio-slider-knob"></span>
+            </label>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-provider-select" class="studio-row-title" data-i18n="ai_provider">Provider Preset</label>
+            </div>
+            <select id="ai-provider-select" class="studio-select" style="width: 175px;">
+              <option value="ollama" selected>Ollama Local (localhost:11434 - llama3.2)</option>
+              <option value="lmstudio">LM Studio Local (localhost:1234)</option>
+              <option value="groq">Groq Cloud (Fast Free - Llama-3.3-70B)</option>
+              <option value="openrouter">OpenRouter Cloud (Free Tier Models)</option>
+              <option value="deepseek">DeepSeek API (deepseek-chat)</option>
+              <option value="openai">OpenAI (gpt-4o-mini)</option>
+              <option value="custom">Custom OpenAI Endpoint</option>
+            </select>
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-endpoint-url" class="studio-row-title" data-i18n="ai_endpoint">Endpoint URL</label>
+            </div>
+            <input type="text" id="ai-endpoint-url" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-model-name" class="studio-row-title" data-i18n="ai_model">Model Name</label>
+            </div>
+            <input type="text" id="ai-model-name" value="llama3.2" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div id="ai-api-key-container" class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-api-key" class="studio-row-title" data-i18n="ai_api_key">API Key</label>
+            </div>
+            <input type="password" id="ai-api-key" placeholder="Optional for local" class="studio-select" style="width: 175px;">
+          </div>
+
+          <div class="studio-row">
+            <div class="studio-row-label">
+              <label for="ai-retriever-preset" class="studio-row-title" data-i18n="ai_retriever_preset">Knowledge Retriever</label>
+            </div>
+            <select id="ai-retriever-preset" class="studio-select" style="width: 175px;">
+              <option value="builtin_rag" selected>Built-in RAG Telemetry</option>
+              <option value="deep_inspection">Deep Subsystem Spec</option>
+              <option value="custom_endpoint">Secondary Endpoint</option>
+            </select>
+          </div>
+
+          <div id="ai-custom-retriever-box" class="studio-row" style="display: none;">
+            <div class="studio-row-label">
+              <label for="ai-retriever-endpoint" class="studio-row-title" data-i18n="ai_retriever_endpoint">Secondary Endpoint</label>
+            </div>
+            <input type="text" id="ai-retriever-endpoint" value="http://localhost:11434/v1" class="studio-select" style="width: 175px;">
+          </div>
+        </div>
+
         <!-- 1. System & Localization Card -->
         <div class="studio-card">
           <div class="studio-card-header">

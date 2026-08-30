@@ -5,6 +5,8 @@ const fs = require('fs');
 const Logger = require('./src/main/Logger.js');
 const SteamService = require('./src/main/SteamService.js');
 
+const { spawn, exec } = require('child_process');
+
 function getAssetsPath() {
   return Logger.getAssetsPath();
 }
@@ -12,6 +14,29 @@ function getAssetsPath() {
 function logDiagnostic(message) {
   Logger.logDiagnostic(message);
 }
+
+function ensureLocalOllamaRunning() {
+  const localAppData = process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || 'C:\\Users\\space', 'AppData', 'Local');
+  const ollamaExePath = path.join(localAppData, 'Programs', 'Ollama', 'ollama.exe');
+
+  if (fs.existsSync(ollamaExePath)) {
+    try {
+      const child = spawn(ollamaExePath, ['serve'], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: Object.assign({}, process.env, { OLLAMA_HOST: '127.0.0.1:11434', OLLAMA_ORIGINS: '*' })
+      });
+      child.unref();
+      Logger.logDiagnostic('[LLM Bridge] Auto-started local Ollama daemon on 127.0.0.1:11434.');
+    } catch (e) {
+      Logger.logDiagnostic(`[LLM Bridge] Ollama launch notice: ${e.message}`);
+    }
+  }
+}
+
+// Auto-start Ollama if installed
+ensureLocalOllamaRunning();
 
 logDiagnostic('=== Application Session Started ===');
 
